@@ -1,0 +1,38 @@
+{
+  "project": "project-01",
+  "description": "Baseline Electron knowledge base with minimal harness",
+  "features": [
+    {
+      "id": "window-launch",
+      "name": "Window Launch",
+      "description": "Electron app opens a BrowserWindow with correct dimensions and preload script",
+      "status": "pass",
+      "evidence": "BrowserWindow created in src/main/main.ts with 1200x800, contextIsolation:true, nodeIntegration:false, and preload pointing to dist/preload/preload.js",
+      "testedAt": "2026-08-29"
+    },
+    {
+      "id": "document-list",
+      "name": "Document List Panel",
+      "description": "Left sidebar shows imported documents with empty state message",
+      "status": "pass",
+      "evidence": "DocumentList component renders all documents from IPC; shows 'No documents yet' empty state when list is empty; includes file input for .txt/.md import",
+      "testedAt": "2026-08-29"
+    },
+    {
+      "id": "question-panel",
+      "name": "Question Panel",
+      "description": "Bottom input bar accepts questions and submits via IPC",
+      "status": "pass",
+      "evidence": "QuestionPanel component calls window.knowledgeBase.qa.ask() on Enter or button click; disabled while request is in-flight",
+      "testedAt": "2026-08-29"
+    },
+    {
+      "id": "data-directory",
+      "name": "Data Directory",
+      "description": "PersistenceService creates and manages userData/knowledge-base-data directory",
+      "status": "pass",
+      "evidence": "PersistenceService constructor calls ensureDirectories() which creates knowledge-base-data/ plus content/, chunks/, and index/ subdirectories using app.getPath('userData')",
+      "testedAt": "2026-08-29"
+    }
+  ]
+}

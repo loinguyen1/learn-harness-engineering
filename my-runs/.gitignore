@@ -1,0 +1,4 @@
+# Run artifacts — the agent's build output, not the experiment record
+node_modules/
+dist/
+*.tsbuildinfo
