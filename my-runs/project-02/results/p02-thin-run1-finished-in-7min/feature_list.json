@@ -1,0 +1,62 @@
+{
+  "project": "project-02",
+  "description": "Agent-readable workspace with import, detail view, and persistence",
+  "features": [
+    {
+      "id": "window-launch",
+      "name": "Window Launch",
+      "description": "Electron app opens a BrowserWindow with correct dimensions and preload script",
+      "status": "pass",
+      "evidence": "Carried over from P1 -- verified working",
+      "testedAt": "2026-03-30T10:00:00Z"
+    },
+    {
+      "id": "document-list",
+      "name": "Document List Panel",
+      "description": "Left sidebar shows imported documents with empty state message",
+      "status": "pass",
+      "evidence": "Carried over from P1 -- verified working",
+      "testedAt": "2026-03-30T10:05:00Z"
+    },
+    {
+      "id": "question-panel",
+      "name": "Question Panel",
+      "description": "Bottom input bar accepts questions and submits via IPC",
+      "status": "pass",
+      "evidence": "Carried over from P1 -- verified working",
+      "testedAt": "2026-03-30T10:08:00Z"
+    },
+    {
+      "id": "data-directory",
+      "name": "Data Directory",
+      "description": "PersistenceService creates and manages userData/knowledge-base-data directory",
+      "status": "pass",
+      "evidence": "Carried over from P1 -- verified working",
+      "testedAt": "2026-03-30T10:10:00Z"
+    },
+    {
+      "id": "document-import",
+      "name": "Document Import",
+      "description": "Users can import .txt and .md files via ImportPanel with file picker",
+      "status": "pass",
+      "evidence": "ImportPanel now opens a native OS file dialog (dialog:pickFile IPC channel, filtered to .txt/.md) since Electron 33 removed renderer File.path. DocumentService.importDocument validates extension and 10MB max size and surfaces errors in the UI. Covered by src/services/document-service.test.ts (import .txt, import .md, reject bad extension, reject oversized file); npm run check and npm run build both pass.",
+      "testedAt": "2026-08-30T15:02:39Z"
+    },
+    {
+      "id": "document-detail",
+      "name": "Document Detail with Content",
+      "description": "DocumentDetail shows full document content, metadata, and delete button",
+      "status": "pass",
+      "evidence": "Added documents:getContent IPC channel (main/preload/DocumentService.getDocumentContent already existed) and wired DocumentDetail to load and render it alongside existing metadata and delete button. Fixed a bug where deleteDocument left the content/<id>.txt file behind after delete. Covered by src/services/document-service.test.ts ('deletes a document and its content'); npm run check and npm run build both pass.",
+      "testedAt": "2026-08-30T15:02:39Z"
+    },
+    {
+      "id": "basic-persistence",
+      "name": "Basic Persistence",
+      "description": "Imported documents persist across app restarts via filesystem storage",
+      "status": "pass",
+      "evidence": "App now loads the document list on startup (useEffect in App.tsx) instead of only on manual refresh, so persisted state is visible immediately after a restart. PersistenceService writes are now genuinely atomic (temp file + rename) as ARCHITECTURE.md claims. Verified with src/services/document-service.test.ts and persistence-service.test.ts, which simulate a restart by re-instantiating the services against the same data directory and confirm documents/content/state survive; npm run check and npm run build both pass.",
+      "testedAt": "2026-08-30T15:02:39Z"
+    }
+  ]
+}

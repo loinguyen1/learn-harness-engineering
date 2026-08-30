@@ -1,0 +1,328 @@
+arm: handoff  mode: container
+### final tree
+.
+./AGENTS.md
+./data
+./data/sample-documents
+./data/sample-documents/design-notes.md
+./data/sample-documents/meeting-summary.txt
+./data/sample-documents/retrieval-plan.md
+./dist
+./docs
+./docs/ARCHITECTURE.md
+./docs/PRODUCT.md
+./feature_list.json
+./init.sh
+./node_modules
+./package-lock.json
+./package.json
+./scripts
+./scripts/dev.js
+./session-handoff.md
+./src
+./src/main
+./src/main/ipc-handlers.ts
+./src/main/main.ts
+./src/preload
+./src/preload/preload.ts
+./src/renderer
+./src/renderer/App.tsx
+./src/renderer/components
+./src/renderer/components/DocumentDetail.tsx
+./src/renderer/components/DocumentList.tsx
+./src/renderer/components/ImportPanel.tsx
+./src/renderer/components/QuestionPanel.tsx
+./src/renderer/components/StatusBar.tsx
+./src/renderer/index.html
+./src/renderer/main.tsx
+./src/renderer/types.d.ts
+./src/services
+./src/services/document-service.ts
+./src/services/indexing-service.ts
+./src/services/persistence-service.ts
+./src/services/qa-service.ts
+./src/shared
+./src/shared/types.ts
+./tsconfig.json
+./tsconfig.node.json
+./vite.config.ts
+
+### state of the harness files at archive time
+--- feature_list.json ---
+{
+  "project": "project-02",
+  "description": "Agent-readable workspace with import, detail view, and persistence",
+  "features": [
+    {
+      "id": "window-launch",
+      "name": "Window Launch",
+      "description": "Electron app opens a BrowserWindow with correct dimensions and preload script",
+      "status": "pass",
+      "evidence": "Carried over from P1 -- verified working",
+      "testedAt": "2026-03-30T10:00:00Z"
+    },
+    {
+      "id": "document-list",
+      "name": "Document List Panel",
+      "description": "Left sidebar shows imported documents with empty state message",
+      "status": "pass",
+      "evidence": "Carried over from P1 -- verified working",
+      "testedAt": "2026-03-30T10:05:00Z"
+    },
+    {
+      "id": "question-panel",
+      "name": "Question Panel",
+      "description": "Bottom input bar accepts questions and submits via IPC",
+      "status": "pass",
+      "evidence": "Carried over from P1 -- verified working",
+      "testedAt": "2026-03-30T10:08:00Z"
+    },
+    {
+      "id": "data-directory",
+      "name": "Data Directory",
+      "description": "PersistenceService creates and manages userData/knowledge-base-data directory",
+      "status": "pass",
+      "evidence": "Carried over from P1 -- verified working",
+      "testedAt": "2026-03-30T10:10:00Z"
+    },
+    {
+      "id": "document-import",
+      "name": "Document Import",
+      "description": "Users can import .txt and .md files via ImportPanel with file picker",
+      "status": "pass",
+      "evidence": "Launched the built app in Electron 33 under xvfb via a Playwright `_electron` driver (`xvfb-run -a node exercise.mjs`) and exercised the real app: clicked the '+ Import' button, which rendered ImportPanel with a 'Choose File' button; called window.knowledgeBase.documents.import('/work/data/sample-documents/meeting-summary.txt') over the real IPC bridge and got back a created Document ({id, title:'meeting-summary', filename:'meeting-summary.txt', size:1160, status:'imported'}); after reloading the renderer, DocumentList showed 'Documents (1)' with the new entry. Also verified the file-type validation and error-surfacing path: importing '/tmp/bad-file.pdf' through the same IPC call threw \"Unsupported file type \\\".pdf\\\". Only .txt and .md files can be imported.\", which App.tsx's handleImport catch wires into ImportPanel's error banner via the `error` prop.",
+      "testedAt": "2026-08-30T16:44:00Z"
+    },
+    {
+      "id": "document-detail",
+      "name": "Document Detail with Content",
+      "description": "DocumentDetail shows full document content, metadata, and delete button",
+      "status": "pass",
+      "evidence": "In the same live-app run, clicked the imported 'meeting-summary' row in the sidebar and screenshotted the result (/tmp/shots/03-document-detail.png): DocumentDetail rendered title, Filename/Imported/Size/Status metadata, Show Chunks / Index Document / Delete buttons, and the full document text body ('Team Meeting Summary - March 2026 ... Next Steps ...') loaded via window.knowledgeBase.documents.getContent(id) in the component's useEffect.",
+      "testedAt": "2026-08-30T16:44:00Z"
+    },
+    {
+      "id": "basic-persistence",
+      "name": "Basic Persistence",
+      "description": "Imported documents persist across app restarts via filesystem storage",
+      "status": "pass",
+      "evidence": "After importing and indexing the sample document, called app.close() on the Electron instance then relaunched a fresh Electron process pointed at the same userData dir (electron.launch again with the same HOME env). Screenshot /tmp/shots/04-relaunch.png and window.knowledgeBase.documents.list() both show the document reappearing without re-importing: 'Documents (1)' with a ✓ next to 'meeting-summary', and the list entry reporting status:'indexed', chunks:3 -- confirming both filesystem persistence (App.tsx's new mount-time refreshDocuments() effect) and the indexed-status propagation fix in ipc-handlers.ts survive a restart.",
+      "testedAt": "2026-08-30T16:44:00Z"
+    }
+  ]
+}
+--- session-handoff.md ---
+# Session Handoff -- Project 02
+
+> Session A: fill every section before you stop.
+> Session B: read this first, before opening any code.
+
+## Date
+
+2026-08-30
+
+## Last `./init.sh` result
+
+Ran `./init.sh` for real. **Exit code 0.** `npm install`, `npm run check`
+(both tsconfig.node.json and tsconfig.json), and `npm run build` (tsc +
+`vite build`) all succeeded. Full output ended with:
+
+```
+✓ built in 317ms
+All checks passed.
+```
+
+## What I finished
+
+All three remaining features are now implemented, manually exercised in a
+real running Electron app, and marked `pass` in `feature_list.json` with
+evidence naming the actual commands/output (not code read):
+
+- **`document-import`**: native `dialog.showOpenDialog` file picker wired
+  end-to-end (main -> preload -> renderer), extension/size validation,
+  and an error banner in `ImportPanel` fed from `App.tsx`'s `importError`
+  state.
+- **`document-detail`**: `DocumentDetail.tsx` now loads and displays full
+  document content via `window.knowledgeBase.documents.getContent(id)`.
+- **`basic-persistence`**: `App.tsx` now calls `refreshDocuments()` on
+  mount (`useEffect(() => { refreshDocuments(); }, [])`), so previously
+  imported documents reappear after a restart.
+
+Also fixed, per the previous handoff's "Blockers" list:
+- The four off-by-one relative import paths to `shared/types` in
+  `App.tsx`, `DocumentDetail.tsx`, `DocumentList.tsx`, `StatusBar.tsx`.
+- Unused `React` imports (React 18 + `jsx: react-jsx`), unused `Chunk`
+  import in `qa-service.ts`, unused `setContent` (now used), implicit-any
+  in `App.tsx`'s citations `.map()`, implicit-any index in
+  `StatusBar.tsx` (replaced with a typed `STATUS_COLORS` record).
+- Indexed-status propagation: `ipc-handlers.ts`'s `START_INDEXING`
+  handler now calls `documentService.updateDocument(id, { status:
+  'indexed', chunks: n })` for every document that has chunks after
+  `indexingService.startIndexing()` resolves (both single-doc and
+  whole-library cases).
+
+## Important discovery: preload script was silently dead (fixed)
+
+This wasn't in any previous handoff and cost most of this session to
+find, so read carefully if `window.knowledgeBase` ever comes back
+`undefined` again.
+
+**Symptom**: `window.knowledgeBase` was `undefined` in the renderer even
+though `preload.ts` correctly calls `contextBridge.exposeInMainWorld`,
+the compiled `dist/preload/preload.js` looked correct, and the preload
+path computed in `main.ts` existed on disk. No error was thrown anywhere
+visible (`page.on('pageerror')`, main process stdout/stderr) -- the
+preload script just never ran.
+
+**Root cause**: Electron 33 defaults `webPreferences.sandbox` to `true`.
+In a sandboxed renderer, the preload script's `require()` is restricted
+to a small builtin allowlist (`electron`, `events`, `timers`, `url`,
+etc.) -- it **cannot** `require()` arbitrary local project files. This
+project's `preload.ts` does `import { IPC_CHANNELS } from
+'../shared/types'`, which compiles to `require("../shared/types")`.
+Under the sandbox, that require fails and aborts the whole preload
+script *before* `contextBridge.exposeInMainWorld` runs -- silently, with
+no error surfaced to the renderer or to Electron's normal error events.
+(Confirmed via bisection: a trivial preload with no local requires
+worked fine under the same sandboxed webPreferences; adding a
+`require('./shared/types')` reproduced the exact failure in isolation.)
+
+**Fix applied** (`src/main/main.ts`, `createWindow()`): added `sandbox:
+false` to the `BrowserWindow`'s `webPreferences`, alongside the existing
+`contextIsolation: true`. This restores full Node `require` inside the
+preload script while keeping the renderer's main world isolated from
+Node/Electron internals (contextIsolation is the setting that actually
+matters for the security boundary here). See the comment left in
+`main.ts` at the `sandbox: false` line.
+
+**If revisited**: the "correct" long-term fix, if someone wants the
+sandbox back on, is to bundle `preload.ts` into a single dependency-free
+file (e.g. via esbuild/vite) so it has no local `require()`s at
+runtime -- inline the `IPC_CHANNELS` constants directly into the
+preload bundle. Out of scope for this session; `sandbox: false` is a
+reasonable, standard choice for a `contextIsolation: true` +
+`nodeIntegration: false` app like this one.
+
+## How features were verified (for reproducibility)
+
+No project skill existed for running this Electron app headlessly. I
+installed `playwright-core` (`npm install --no-save playwright-core`,
+NOT saved to `package.json`/`package-lock.json` -- confirmed clean
+afterward) and drove the built app with a throwaway Playwright
+`_electron` script under `xvfb-run -a`. `tmux` is not installed in this
+container, so I couldn't follow the `run` skill's REPL-driver pattern
+verbatim -- used a plain sequential Node script instead of a REPL.
+System libs for Electron under xvfb (`libnss3`, `libgbm1`, `libgtk-3-0`,
+etc.) were already present; no `apt-get` needed.
+
+Key gotchas if you rebuild this driver:
+- `xvfb-run -a node script.mjs` must be run with cwd `/work` (or
+  `node_modules/playwright-core` won't resolve for an ESM import).
+- Electron's chrome sandbox needs `--no-sandbox` in `args` (container has
+  no `CAP_SYS_ADMIN`) -- unrelated to the `webPreferences.sandbox` issue
+  above, don't conflate the two.
+- To test persistence across a real restart, launch two separate
+  `_electron.launch()` processes with the **same** `HOME` env var
+  pointing at a scratch directory (so `app.getPath('userData')`
+  resolves to the same place both times), calling `app.close()` on the
+  first before launching the second.
+- Clicking a list row via `document.querySelectorAll('div')` + text
+  match needs care: `find()` on document-order divs returns the
+  *outermost* matching ancestor first (since parent textContent
+  includes all child text), not the actual clickable leaf row. Find a
+  leaf div (`.children.length === 0`) whose own trimmed text equals the
+  target, then click `.parentElement`.
+- I did not build a persistent driver script or `.claude/skills/`
+  entry for this -- the throwaway script was deleted after use. If this
+  project needs headless UI verification again regularly, it's worth
+  running `/run-skill-generator` to capture the sandbox/HOME/click
+  gotchas above as a real project skill.
+
+## Decisions I made
+
+(Carried forward, now implemented as described in the previous handoff,
+plus the new sandbox fix above.)
+
+- Native `dialog.showOpenDialog()` for file selection instead of
+  resurrecting `File.path` (removed in Electron 32+).
+- File validation lives in `DocumentService`, not the IPC handler or
+  renderer.
+- `documents:content` is a separate lazy IPC channel from `documents:get`
+  (metadata list stays light; content fetched only when viewing detail).
+- Indexed-status propagation fixed at the `ipc-handlers.ts` layer (in
+  the `START_INDEXING` handler) rather than coupling `IndexingService`
+  to `DocumentService` directly.
+
+## Files I changed
+
+- `src/renderer/App.tsx` -- fixed import path, removed unused `React`
+  import, added mount-time `refreshDocuments()` effect, added
+  `importError` state wired to `ImportPanel`, fixed implicit-any in
+  citations map, added `selectFile`/`getContent` to the `declare global`
+  Window type (using shared `Chunk` type instead of an inline duplicate
+  to keep declaration merging consistent with `types.d.ts`).
+- `src/renderer/components/DocumentDetail.tsx` -- fixed import path,
+  removed unused `React` import, implemented content loading via
+  `getContent(id)`, removed stale TODO/placeholder comments.
+- `src/renderer/components/DocumentList.tsx` -- fixed import path,
+  removed unused `React` import.
+- `src/renderer/components/StatusBar.tsx` -- fixed import path, removed
+  unused `React` import, replaced implicit-any status-color lookup with
+  a typed `STATUS_COLORS: Record<AppStatus['indexStatus'], string>`.
+- `src/renderer/components/ImportPanel.tsx` -- replaced broken
+  `<input type="file">` + `file.path` with a "Choose File" button that
+  calls `window.knowledgeBase.documents.selectFile()`; added an `error`
+  prop rendered as a red banner.
+- `src/renderer/types.d.ts` -- added `selectFile`/`getContent`
+  signatures to match `App.tsx`'s merged `Window.knowledgeBase` type.
+- `src/preload/preload.ts` -- exposed `documents.selectFile()` and
+  `documents.getContent(id)`.
+- `src/main/main.ts` -- added `sandbox: false` to `webPreferences` (see
+  "Important discovery" above).
+- `src/main/ipc-handlers.ts` -- added `SELECT_IMPORT_FILE` and
+  `GET_DOCUMENT_CONTENT` handlers; `START_INDEXING` handler now
+  propagates indexed status/chunk count to `DocumentService` after
+  indexing completes.
+- `src/services/qa-service.ts` -- dropped unused `Chunk` import.
+- `feature_list.json` -- all three remaining features marked `pass`
+  with evidence from the live-app run described above.
+
+(`src/services/document-service.ts`'s import validation from the prior
+session was left as-is -- it was already correct and self-contained.)
+
+## Blockers
+
+None remaining that I know of. `./init.sh` exits 0, all three features
+were exercised in a real running instance of the app (not just
+type-checked), and `feature_list.json` reflects that.
+
+Minor, non-blocking items a future session could pick up if asked:
+- 8 npm audit vulnerabilities reported by `npm install` (4 moderate, 3
+  high, 1 critical) -- pre-existing, not investigated this session,
+  unrelated to the three features. Run `npm audit` for details before
+  touching dependencies.
+- No project skill exists yet for headlessly running/screenshotting
+  this Electron app. See "How features were verified" above -- would be
+  useful to formalize via `/run-skill-generator` if headless UI checks
+  become routine for this project.
+- The Q&A feature (`qa-service.ts`, `QuestionPanel.tsx`) was not touched
+  or re-verified this session -- it was already marked `pass`... actually
+  checking `feature_list.json`, `question-panel` (the input bar) is
+  `pass` from P1, but there's no explicit "Q&A response correctness"
+  feature entry, so nothing to do there unless a new feature is added.
+
+## Next step
+
+All `feature_list.json` entries are now `pass`. There is no explicit
+next feature queued. If a new session picks this up:
+
+1. Read this handoff and `feature_list.json` to confirm nothing has
+   regressed (`./init.sh` should still exit 0 -- run it, don't assume).
+2. If new feature requests come in (e.g. from an updated
+   `docs/PRODUCT.md` or a new `feature_list.json` entry), follow the
+   same discipline: implement, run `./init.sh`, then actually launch and
+   exercise the app before marking anything `pass`.
+3. Watch for the `sandbox: false` line in `main.ts` if anyone
+   "cleans up" webPreferences -- removing it will silently break
+   `window.knowledgeBase` again with no visible error (see "Important
+   discovery" above for how to diagnose it if it recurs).

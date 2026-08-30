@@ -1,0 +1,62 @@
+{
+  "project": "project-02",
+  "description": "Agent-readable workspace with import, detail view, and persistence",
+  "features": [
+    {
+      "id": "window-launch",
+      "name": "Window Launch",
+      "description": "Electron app opens a BrowserWindow with correct dimensions and preload script",
+      "status": "pass",
+      "evidence": "Carried over from P1 -- verified working",
+      "testedAt": "2026-03-30T10:00:00Z"
+    },
+    {
+      "id": "document-list",
+      "name": "Document List Panel",
+      "description": "Left sidebar shows imported documents with empty state message",
+      "status": "pass",
+      "evidence": "Carried over from P1 -- verified working",
+      "testedAt": "2026-03-30T10:05:00Z"
+    },
+    {
+      "id": "question-panel",
+      "name": "Question Panel",
+      "description": "Bottom input bar accepts questions and submits via IPC",
+      "status": "pass",
+      "evidence": "Carried over from P1 -- verified working",
+      "testedAt": "2026-03-30T10:08:00Z"
+    },
+    {
+      "id": "data-directory",
+      "name": "Data Directory",
+      "description": "PersistenceService creates and manages userData/knowledge-base-data directory",
+      "status": "pass",
+      "evidence": "Carried over from P1 -- verified working",
+      "testedAt": "2026-03-30T10:10:00Z"
+    },
+    {
+      "id": "document-import",
+      "name": "Document Import",
+      "description": "Users can import .txt and .md files via ImportPanel with file picker",
+      "status": "pass",
+      "evidence": "Launched the built app in Electron 33 under xvfb via a Playwright `_electron` driver (`xvfb-run -a node exercise.mjs`) and exercised the real app: clicked the '+ Import' button, which rendered ImportPanel with a 'Choose File' button; called window.knowledgeBase.documents.import('/work/data/sample-documents/meeting-summary.txt') over the real IPC bridge and got back a created Document ({id, title:'meeting-summary', filename:'meeting-summary.txt', size:1160, status:'imported'}); after reloading the renderer, DocumentList showed 'Documents (1)' with the new entry. Also verified the file-type validation and error-surfacing path: importing '/tmp/bad-file.pdf' through the same IPC call threw \"Unsupported file type \\\".pdf\\\". Only .txt and .md files can be imported.\", which App.tsx's handleImport catch wires into ImportPanel's error banner via the `error` prop.",
+      "testedAt": "2026-08-30T16:44:00Z"
+    },
+    {
+      "id": "document-detail",
+      "name": "Document Detail with Content",
+      "description": "DocumentDetail shows full document content, metadata, and delete button",
+      "status": "pass",
+      "evidence": "In the same live-app run, clicked the imported 'meeting-summary' row in the sidebar and screenshotted the result (/tmp/shots/03-document-detail.png): DocumentDetail rendered title, Filename/Imported/Size/Status metadata, Show Chunks / Index Document / Delete buttons, and the full document text body ('Team Meeting Summary - March 2026 ... Next Steps ...') loaded via window.knowledgeBase.documents.getContent(id) in the component's useEffect.",
+      "testedAt": "2026-08-30T16:44:00Z"
+    },
+    {
+      "id": "basic-persistence",
+      "name": "Basic Persistence",
+      "description": "Imported documents persist across app restarts via filesystem storage",
+      "status": "pass",
+      "evidence": "After importing and indexing the sample document, called app.close() on the Electron instance then relaunched a fresh Electron process pointed at the same userData dir (electron.launch again with the same HOME env). Screenshot /tmp/shots/04-relaunch.png and window.knowledgeBase.documents.list() both show the document reappearing without re-importing: 'Documents (1)' with a ✓ next to 'meeting-summary', and the list entry reporting status:'indexed', chunks:3 -- confirming both filesystem persistence (App.tsx's new mount-time refreshDocuments() effect) and the indexed-status propagation fix in ipc-handlers.ts survive a restart.",
+      "testedAt": "2026-08-30T16:44:00Z"
+    }
+  ]
+}

@@ -7,7 +7,7 @@ FROM node:22-bookworm-slim
 # git + ripgrep because Claude Code reaches for them constantly.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       ca-certificates curl git ripgrep procps \
-      xvfb x11-utils \
+      xvfb x11-utils xauth \
       libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 \
       libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 \
       libpango-1.0-0 libcairo2 libgtk-3-0 \

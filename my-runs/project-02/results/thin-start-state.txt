@@ -1,0 +1,46 @@
+arm: thin
+mode: container
+run dir: /Users/loi/repo_/learn-harness-engineering/my-runs/project-02/runs/p02-thin
+### file tree
+.
+./AGENTS.md
+./data
+./data/sample-documents
+./data/sample-documents/design-notes.md
+./data/sample-documents/meeting-summary.txt
+./data/sample-documents/retrieval-plan.md
+./docs
+./docs/ARCHITECTURE.md
+./docs/PRODUCT.md
+./feature_list.json
+./init.sh
+./package.json
+./scripts
+./scripts/dev.js
+./src
+./src/main
+./src/main/ipc-handlers.ts
+./src/main/main.ts
+./src/preload
+./src/preload/preload.ts
+./src/renderer
+./src/renderer/App.tsx
+./src/renderer/components
+./src/renderer/components/DocumentDetail.tsx
+./src/renderer/components/DocumentList.tsx
+./src/renderer/components/ImportPanel.tsx
+./src/renderer/components/QuestionPanel.tsx
+./src/renderer/components/StatusBar.tsx
+./src/renderer/index.html
+./src/renderer/main.tsx
+./src/renderer/types.d.ts
+./src/services
+./src/services/document-service.ts
+./src/services/indexing-service.ts
+./src/services/persistence-service.ts
+./src/services/qa-service.ts
+./src/shared
+./src/shared/types.ts
+./tsconfig.json
+./tsconfig.node.json
+./vite.config.ts

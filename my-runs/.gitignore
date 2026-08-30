@@ -2,3 +2,6 @@
 node_modules/
 dist/
 *.tsbuildinfo
+
+# Live run directories — scratch. archive-run.sh copies the record into results/.
+project-*/runs/

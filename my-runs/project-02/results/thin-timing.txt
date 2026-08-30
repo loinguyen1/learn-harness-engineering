@@ -1,0 +1,1 @@
+thin session-a run2 KILLED (stalled on permission prompt, no work done)
