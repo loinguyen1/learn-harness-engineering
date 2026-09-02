@@ -83,13 +83,30 @@ Project 02's gate exited 0 on an app where **nothing worked** — Electron 33's
 `sandbox: true` silently killed the preload script, so the whole IPC bridge was
 `undefined`. `tsc` and `vite` both reported success.
 
-**So add a step that looks at the thing running**, not just compiling:
+**Launching and looking is not enough either.** Project 03 shipped the same
+defect, and measuring it settled the question: the app renders *perfectly* with
+a dead IPC bridge, no error is printed anywhere, and the rendered page is
+**byte-identical** to the working one. A screenshot cannot tell them apart.
 
-- a launch that exits non-zero if the window never renders
-- a smoke test that drives one real user path end to end
-- a screenshot, if the project has a UI
+So the fourth step is not "launch it". It is:
 
-Compiling proves compiling. Nothing more.
+```
+start it  →  do ONE real user action  →  check the answer  →  exit 0 or non-zero
+```
+
+For most projects that is one line of shell — `curl -f localhost:3000/users/1`,
+or a CLI run piped to `grep`. Only a GUI app needs code inside it, because it
+has no command-line surface to poke.
+
+**Pick an action that goes all the way through**, edge to data and back. "Does
+it start" proves a port is open. In P03 the gate asked *"is the connector
+alive?"*, passed, and still missed a bug where indexing one document returned
+**zero citations** — five chunks written, none retrievable, everything green.
+Widening it to `import → index that one document → ask → assert citations > 0`
+caught it, and reverting the fix turned the gate red on demand.
+
+Compiling proves compiling. Rendering proves rendering. Only using it proves it
+works.
 
 ---
 
@@ -212,6 +229,14 @@ fix the harness; the harness fixes the app.
 5. **Reciting a lesson is not applying it.** I could quote "a harness proves
    only what it measures" and still shipped a gate that only measured
    compiling.
+6. **"It failed" is not "it found the bug."** Read which step produced the exit
+   code. In P03 five separate failures in one day were environmental — npm cache
+   permissions, a failed `cd` the shell ignored, a wrong-platform binary twice,
+   and the gate working exactly as designed. Every one looked like the code.
+7. **A checklist can do a gate's job, but only a gate cannot be skipped.** A
+   line in `clean-state-checklist.md` got an agent to run a test `init.sh`
+   could not — genuinely useful, and entirely dependent on it choosing to read
+   the file. If a check matters, move it into the gate.
 
 ---
 
@@ -234,6 +259,7 @@ docker run --rm -it -v <run-dir>:/work -v <auth-volume>:/home/agent <image> \
 | `xvfb-run: xauth command not found` | install `xauth`; `xvfb` alone is not enough |
 | `npm install` dies with EACCES | root-owned entries in `~/.npm` → `--cache <somewhere-else>` |
 | App will not start in a container | a macOS `node_modules` cannot run in Linux; install inside |
+| `spawn ENOEXEC`, or `Syntax error: "(" unexpected` | the reverse: a container-built `node_modules` run on the host. **One folder, one platform.** Run the gate where the code was installed — this cost two wrong conclusions in P03 |
 | Cannot exit a stuck session | `docker kill <id>` from another terminal |
 
 **Stopping a session part-way is hard.** Count file edits, not minutes. A clock
@@ -247,7 +273,8 @@ tries; "stop after ~4 edits" worked.
 ```
 [ ] Ran the build myself. Wrote BASELINE.md.
 [ ] init.sh exists, has set -euo pipefail, and I watched it FAIL.
-[ ] init.sh checks something beyond compiling (launch / smoke / render).
+[ ] init.sh does ONE real user action end to end and asserts on the answer
+    (not "does it launch" -- a dead app launches and renders identically).
 [ ] AGENTS.md defines done as "./init.sh exits 0" + evidence naming a command.
 [ ] feature_list.json has an evidence field, empty, for every feature.
 [ ] session-handoff.md template exists, with a field demanding a command's output.

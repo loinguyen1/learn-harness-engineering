@@ -1,0 +1,138 @@
+Only in repaired: package-lock.json
+diff -ru --exclude=node_modules --exclude=dist broken/src/main/main.ts repaired/src/main/main.ts
+--- broken/src/main/main.ts	2026-08-26 15:41:02
++++ repaired/src/main/main.ts	2026-09-01 11:22:00
+@@ -18,6 +18,9 @@
+       preload: path.join(__dirname, '..', 'preload', 'preload.js'),
+       contextIsolation: true,
+       nodeIntegration: false,
++      // Electron 33 defaults this to true, which breaks the preload's
++      // cross-module require and silently kills window.knowledgeBase.
++      sandbox: false,
+     },
+     title: 'Knowledge Base',
+   });
+diff -ru --exclude=node_modules --exclude=dist broken/src/preload/preload.ts repaired/src/preload/preload.ts
+--- broken/src/preload/preload.ts	2026-08-26 15:41:02
++++ repaired/src/preload/preload.ts	2026-09-01 11:22:47
+@@ -1,4 +1,4 @@
+-import { contextBridge, ipcRenderer } from 'electron';
++import { contextBridge, ipcRenderer, webUtils } from 'electron';
+ import { IPC_CHANNELS } from '../shared/types';
+ 
+ const api = {
+@@ -8,6 +8,8 @@
+     get: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.GET_DOCUMENT, id),
+     getContent: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.GET_DOCUMENT_CONTENT, id),
+     delete: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.DELETE_DOCUMENT, id),
++    // Electron 32 removed File.path; this is its supported replacement.
++    pathFor: (file: File) => webUtils.getPathForFile(file),
+   },
+   indexing: {
+     start: (documentId?: string) => ipcRenderer.invoke(IPC_CHANNELS.START_INDEXING, documentId),
+diff -ru --exclude=node_modules --exclude=dist broken/src/renderer/App.tsx repaired/src/renderer/App.tsx
+--- broken/src/renderer/App.tsx	2026-08-26 15:41:02
++++ repaired/src/renderer/App.tsx	2026-09-01 11:22:23
+@@ -1,32 +1,11 @@
+-import React, { useState, useCallback, useEffect } from 'react';
++import { useState, useCallback, useEffect } from 'react';
+ import { DocumentList } from './components/DocumentList';
+ import { QuestionPanel } from './components/QuestionPanel';
+ import { DocumentDetail } from './components/DocumentDetail';
+ import { ImportPanel } from './components/ImportPanel';
+ import { StatusBar } from './components/StatusBar';
+-import { Document, AppStatus, QAResponse } from '../../shared/types';
++import { Document, AppStatus, QAResponse } from '../shared/types';
+ 
+-declare global {
+-  interface Window {
+-    knowledgeBase: {
+-      documents: {
+-        list: () => Promise<Document[]>;
+-        import: (filePath: string) => Promise<Document>;
+-        get: (id: string) => Promise<Document | null>;
+-        delete: (id: string) => Promise<boolean>;
+-      };
+-      indexing: {
+-        start: (documentId?: string) => Promise<{ status: string }>;
+-        status: () => Promise<AppStatus>;
+-        chunks: (documentId: string) => Promise<Array<{ id: string; content: string; index: number }>>;
+-      };
+-      qa: {
+-        ask: (question: string) => Promise<QAResponse>;
+-        history: () => Promise<Array<{ question: string; response: QAResponse }>>;
+-      };
+-    };
+-  }
+-}
+ 
+ export function App() {
+   const [documents, setDocuments] = useState<Document[]>([]);
+diff -ru --exclude=node_modules --exclude=dist broken/src/renderer/components/DocumentDetail.tsx repaired/src/renderer/components/DocumentDetail.tsx
+--- broken/src/renderer/components/DocumentDetail.tsx	2026-08-26 15:41:02
++++ repaired/src/renderer/components/DocumentDetail.tsx	2026-09-01 11:22:23
+@@ -1,5 +1,5 @@
+-import React, { useEffect, useState } from 'react';
+-import { Document, Chunk } from '../../../shared/types';
++import { useEffect, useState } from 'react';
++import { Document, Chunk } from '../../shared/types';
+ 
+ interface Props {
+   document: Document;
+diff -ru --exclude=node_modules --exclude=dist broken/src/renderer/components/DocumentList.tsx repaired/src/renderer/components/DocumentList.tsx
+--- broken/src/renderer/components/DocumentList.tsx	2026-08-26 15:41:02
++++ repaired/src/renderer/components/DocumentList.tsx	2026-09-01 11:22:23
+@@ -1,5 +1,4 @@
+-import React from 'react';
+-import { Document } from '../../../shared/types';
++import { Document } from '../../shared/types';
+ 
+ interface Props {
+   documents: Document[];
+diff -ru --exclude=node_modules --exclude=dist broken/src/renderer/components/ImportPanel.tsx repaired/src/renderer/components/ImportPanel.tsx
+--- broken/src/renderer/components/ImportPanel.tsx	2026-08-26 15:41:02
++++ repaired/src/renderer/components/ImportPanel.tsx	2026-09-01 11:22:47
+@@ -1,4 +1,3 @@
+-import React from 'react';
+ 
+ interface Props {
+   onImport: (filePath: string) => void;
+@@ -25,7 +24,7 @@
+         accept=".txt,.md"
+         onChange={e => {
+           const file = e.target.files?.[0];
+-          if (file) onImport(file.path);
++          if (file) onImport(window.knowledgeBase.documents.pathFor(file));
+         }}
+         style={{ marginTop: '10px' }}
+       />
+diff -ru --exclude=node_modules --exclude=dist broken/src/renderer/components/StatusBar.tsx repaired/src/renderer/components/StatusBar.tsx
+--- broken/src/renderer/components/StatusBar.tsx	2026-08-26 15:41:02
++++ repaired/src/renderer/components/StatusBar.tsx	2026-09-01 11:22:23
+@@ -1,5 +1,4 @@
+-import React from 'react';
+-import { AppStatus } from '../../../shared/types';
++import { AppStatus } from '../../shared/types';
+ 
+ interface Props {
+   status: AppStatus;
+diff -ru --exclude=node_modules --exclude=dist broken/src/renderer/types.d.ts repaired/src/renderer/types.d.ts
+--- broken/src/renderer/types.d.ts	2026-08-26 15:41:02
++++ repaired/src/renderer/types.d.ts	2026-09-01 11:22:47
+@@ -10,6 +10,7 @@
+         get: (id: string) => Promise<import('../shared/types').Document | null>;
+         getContent: (id: string) => Promise<string | null>;
+         delete: (id: string) => Promise<boolean>;
++        pathFor: (file: File) => string;
+       };
+       indexing: {
+         start: (documentId?: string) => Promise<import('../shared/types').AppStatus>;
+diff -ru --exclude=node_modules --exclude=dist broken/src/services/qa-service.ts repaired/src/services/qa-service.ts
+--- broken/src/services/qa-service.ts	2026-08-26 15:41:02
++++ repaired/src/services/qa-service.ts	2026-09-01 11:22:23
+@@ -1,4 +1,4 @@
+-import { QAResponse, QAHistory, Citation, Chunk } from '../shared/types';
++import { QAResponse, QAHistory, Citation } from '../shared/types';
+ import { PersistenceService } from './persistence-service';
+ import { IndexingService } from './indexing-service';
+ 

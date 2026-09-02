@@ -49,7 +49,7 @@ case "${1:-}" in
       --memory=4g --cpus=2 --pids-limit=512 \
       --cap-drop=ALL --security-opt no-new-privileges \
       "$IMAGE" \
-      bash -lc 'xvfb-run -a claude ${1:+"$1"}' _ "$PROMPT"
+      bash -lc 'claude ${1:+"$1"}' _ "$PROMPT"
     ;;
 
   shell)
