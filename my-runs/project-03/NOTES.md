@@ -18,16 +18,18 @@ that only proved the code compiled.
 
 ## What got built
 
-`init.sh` now has four steps instead of three:
+`init.sh` now has five steps instead of three:
 
 ```
 1. install
 2. type-check        ← code
 3. build             ← code
-4. start the app, ask it if its connector is alive   ← PRODUCT
+4. start the app and drive one real user path        ← PRODUCT
+5. warn if clean-state-checklist.md has gone stale   ← the harness watching itself
 ```
 
-Step 4 is the new thing. It sets `SMOKE=1`, the app checks whether
+Step 4 is the new thing; step 5 arrived later, after the checklist turned out to
+have the same staleness problem it was written to prevent. It sets `SMOKE=1`, the app checks whether
 `window.knowledgeBase` exists, prints the answer, and exits 0 or 1.
 
 Verified against three trees:
@@ -273,6 +275,29 @@ what prevented it.
 
 ---
 
+## Postscript — the write-up went stale too
+
+A final audit of this project's own documents, using the discipline the project
+is about, found two false claims in them:
+
+| claim | reality |
+|---|---|
+| `NOTES.md`: *"init.sh now has four steps"* | five, since the checklist warning was added |
+| `REPAIR.md`: *"48 lines, 9 files"*, and `results/repair.diff` | 182 lines, 11 files, after the bug fix and the smoke-test upgrade |
+
+Both were true when written. Neither was true an hour later. Nobody lied and
+nobody was careless — the documents simply stopped tracking the thing they
+described, which is the same failure as a `pass` status on a dead feature and a
+ticked box on code that has changed.
+
+Found by running commands against the docs rather than re-reading them.
+`repair.diff` was regenerated; the two numbers were corrected.
+
+**Rule 7 applies to the notes as well:** anything that records a claim goes
+stale, including the file that says so.
+
+---
+
 ## Honest limitations
 
 - **One arm, one session.** No control to compare against, so nothing here
@@ -308,7 +333,7 @@ what prevented it.
 
 - `harness/init.sh` — the gate. 3/3.
 - `BASELINE.md` — measured starting state, written before anything ran
-- `REPAIR.md` — the 48-line pre-fix, and what was deliberately left alone
+- `REPAIR.md` — the pre-fix and the two later changes (182 lines, 11 files)
 - `fixtures/broken`, `fixtures/repaired` — the two practice trees
 - `runs/session-1/` — the agent's output
 - `results/` — raw command output for every claim in `BASELINE.md`

@@ -13,7 +13,10 @@ untouched. Your `init.sh` gets run against it and must fail — a gate you have
 not watched fail is not a gate. Only after that do the arms start from
 `repaired/`.
 
-## What changed — 48 lines, 9 files (`results/repair.diff`)
+## What changed — the original pre-fix: 48 lines, 9 files
+
+(`results/repair.diff` shows the *current* total, 182 lines across 11
+files, because of the two later changes recorded further down.)
 
 | # | Change | Why |
 |---|---|---|
