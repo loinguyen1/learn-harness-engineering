@@ -1,6 +1,18 @@
 # Clean State Checklist -- Project 03
 
-> Walk this before saying the work is done.
+> **Walked on:** ______________  **by session:** ______________
+> **`./init.sh` exit code at the time:** ______
+>
+> ---
+>
+> Walk this **once per session, at the end** — before saying the work is done.
+> It is not a per-feature form; per-feature proof lives in `feature_list.json`
+> and `claude-progress.md`.
+>
+> **If any box below is already ticked when you arrive, those ticks belong to a
+> previous session and describe code that may no longer exist. Blank the whole
+> file and walk it yourself.** A ticked box you did not tick is not evidence,
+> it is inherited furniture.
 >
 > **Every box below names a command.** Do not tick a box you have not run.
 > Write the result next to it -- a bare `[x]` is worthless.

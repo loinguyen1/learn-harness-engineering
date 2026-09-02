@@ -186,6 +186,36 @@ Three trees, still 3/3 — and now the checklist item is unskippable.
 
 ---
 
+## The checklist went stale, in the file written to stop things going stale
+
+Asked how the checklist behaves across sessions, the honest answer was: **it
+doesn't reset, and nothing tells anyone to reset it.**
+
+Session 3 left all 14 boxes ticked. Session 4 would have inherited a fully
+ticked file describing code it had not run — the same staleness lie as
+`feature_list.json` claiming 11 features pass while the app was dead. In the
+file written specifically to catch that.
+
+Fixed in three layers, weakest to strongest:
+
+| layer | strength |
+|---|---|
+| a `Walked on: ___ by session: ___` header | makes age **visible** |
+| an `AGENTS.md` rule: *blank it if you find it ticked* | a rule — **skippable** |
+| `init.sh` step 5: warn when the checklist has ticks and `src/` is newer | **runs every time, cannot be skipped** |
+
+Verified both directions: silent on a blank checklist, fires when boxes are
+ticked and a source file is newer.
+
+**A warning, not a failure**, because `init.sh` runs mid-work where a stale
+checklist is normal. A gate step that fires constantly gets disabled, and a
+disabled check is worse than none.
+
+The lesson is the project's own, turned back on the harness: **anything that
+records a claim goes stale, and something that cannot be skipped has to notice.**
+Writing the file did not exempt it from the rule.
+---
+
 ## The three lessons, in the order they landed
 
 **1. "It failed" is not "it found the bug."**

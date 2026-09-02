@@ -37,6 +37,20 @@ else
   SMOKE=1 npx electron .
 fi
 
+# 5. Is the clean-state checklist describing code that still exists?
+#    A rule in AGENTS.md can be skipped. This cannot -- it runs every time.
+#    A warning, not a failure: init.sh runs mid-work, when the checklist being
+#    out of date is normal and expected.
+if [ -f clean-state-checklist.md ] \
+   && grep -q '^- \[x\]' clean-state-checklist.md \
+   && [ -n "$(find src -newer clean-state-checklist.md -type f -print -quit)" ]; then
+  echo
+  echo "WARNING: clean-state-checklist.md has ticked boxes, but src/ has changed"
+  echo "         since it was walked. Those ticks describe code that no longer"
+  echo "         exists. Blank the file and walk it again before calling this done."
+  echo
+fi
+
 # Last line on purpose. After `set -e` this is unreachable if anything above
 # failed, so it can't lie.
 echo "All checks passed."

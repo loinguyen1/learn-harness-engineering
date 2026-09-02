@@ -84,5 +84,13 @@ per-feature log is what survives.
 If you are unsure what to put in a section, that uncertainty is exactly what
 the next session needs -- write it down.
 
-**Before declaring the work finished:** walk `clean-state-checklist.md`. Every
-box on it names a command. Do not tick a box you have not run.
+**Before declaring the work finished:** walk `clean-state-checklist.md`.
+
+It is a **per-session** sweep, not a per-feature form. If you find boxes already
+ticked, they are a previous session's — **blank the file and walk it yourself.**
+Every box names a command. Do not tick a box you have not run, and fill in the
+`Walked on` header so the next session can see how old it is.
+
+`./init.sh` prints a warning when the checklist is older than the newest change
+in `src/`. That warning means its ticks are describing code that has since
+changed.
