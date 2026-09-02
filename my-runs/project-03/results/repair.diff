@@ -1,0 +1,368 @@
+diff -ru --exclude=node_modules --exclude=dist fixtures/broken/AGENTS.md fixtures/repaired/AGENTS.md
+--- fixtures/broken/AGENTS.md	2026-08-26 15:41:02
++++ fixtures/repaired/AGENTS.md	2026-09-02 11:16:19
+@@ -2,10 +2,11 @@
+ 
+ ## Quick Start
+ 
+-1. Run `npm install && npm run check` to verify the build.
+-2. Read `docs/ARCHITECTURE.md` for layer structure.
+-3. Read `docs/PRODUCT.md` for feature requirements.
+-4. Check `feature_list.json` for what needs to be done.
++1. `./init.sh` -- run this FIRST, before reading any code. It tells you what
++   you actually inherited. Do not predict its result.
++2. Read `session-handoff.md`, then `claude-progress.md`.
++3. Read `feature_list.json` -- but see **Trust** below.
++4. `docs/ARCHITECTURE.md` for layers, `docs/PRODUCT.md` for requirements.
+ 
+ ## Layers
+ 
+@@ -16,32 +17,80 @@
+ 
+ ## Conventions
+ 
+-- TypeScript strict mode. No `any` without comment.
++- TypeScript strict mode. No `any` without a comment.
+ - Named exports only.
+-- IPC channels in `src/shared/types.ts`.
++- IPC channels in `src/shared/types.ts` -- one source of truth. Never declare
++  the same contract in two places.
+ 
+-## Features to Implement
++## Trust
+ 
+-The new features for this project are:
++**`feature_list.json` is a claim, not a fact.** It has been wrong in both
++directions in this repository:
+ 
+-1. **Document Chunking** -- IndexingService splits documents into ~500 char chunks
+-2. **Metadata Extraction** -- Extract word count, line count, file type on import
+-3. **Indexing Status UI** -- StatusBar shows indexing progress with counts
+-4. **Grounded Q&A** -- QaService returns answers with citations and confidence
++- features marked `not-started` whose code was already finished and working
++- features marked `pass`, with detailed evidence, while the app was completely
++  non-functional
+ 
+-Check `feature_list.json` for current status.
++**So: before you act on a status, check it.**
+ 
++- Before implementing something marked `not-started`, look at whether it
++  already works. If it does, say so and move on. **Do not rewrite working
++  code because a file told you it was missing.**
++- Before trusting something marked `pass`, run `./init.sh`. If it disagrees
++  with the file, the file is wrong.
++- When you find a stale claim, **correct it and say it was stale.** Do not
++  silently overwrite it.
++
++## One feature at a time
++
++Finish one feature completely -- implement, verify, record -- before starting
++the next.
++
++Not because it is tidier. Because when something breaks you need to know which
++change did it, and because a feature verified in a batch of four has no
++individual proof.
++
+ ## Definition of Done
+ 
+-A feature is "done" when:
++A feature is not done because you believe it is. It is done when:
+ 
+-1. TypeScript compiles without errors (`npm run check`).
+-2. The app launches and the feature works.
+-3. The feature appears in `feature_list.json` with status `"pass"` and evidence.
++1. `./init.sh` exits 0. **Run it.** Do not predict it.
++2. Its entry in `feature_list.json` has status `"pass"` and an `evidence`
++   field naming **the command you ran and what it printed**.
++3. `claude-progress.md` has an entry for it.
+ 
++**Evidence describing code you READ, rather than a command you RAN, does not
++count.** *"chunkDocument splits on paragraph boundaries"* is an opinion.
++*"ran init.sh, exit 0, BRIDGE: object"* is a fact.
++
++`./init.sh` includes a step that starts the real app and checks its IPC bridge
++is alive. `npm run check` and `npm run build` both pass on an app where nothing
++works -- that is why the fourth step exists. Do not remove it.
++
+ ## Session Handoff
+ 
+-When resuming work, first check whether `session-handoff.md` exists. The starter
+-does not include it by default; if it is missing, reconstruct state from
+-`feature_list.json`, `docs/ARCHITECTURE.md`, `docs/PRODUCT.md`, and the current
+-git diff.
++This work spans more than one session. The next session is a different agent
++with no memory of this one. **The repository is the only thing it inherits.**
++
++**When you start:** read `session-handoff.md` before opening any code.
++
++**As each feature finishes:** append an entry to `claude-progress.md`. Not at
++the end of the session -- at the end of the feature. A handoff written only at
++a graceful exit is lost to a crash, a context limit, or a closed laptop. The
++per-feature log is what survives.
++
++**Before you stop:** fill in every section of `session-handoff.md`. The
++`Last ./init.sh result` field must contain the exit code from an actual run.
++If you are unsure what to put in a section, that uncertainty is exactly what
++the next session needs -- write it down.
++
++**Before declaring the work finished:** walk `clean-state-checklist.md`.
++
++It is a **per-session** sweep, not a per-feature form. If you find boxes already
++ticked, they are a previous session's — **blank the file and walk it yourself.**
++Every box names a command. Do not tick a box you have not run, and fill in the
++`Walked on` header so the next session can see how old it is.
++
++`./init.sh` prints a warning when the checklist is older than the newest change
++in `src/`. That warning means its ticks are describing code that has since
++changed.
+Only in fixtures/repaired: claude-progress.md
+Only in fixtures/repaired: clean-state-checklist.md
+Only in fixtures/repaired: session-handoff.md
+diff -ru --exclude=node_modules --exclude=dist fixtures/broken/src/main/main.ts fixtures/repaired/src/main/main.ts
+--- fixtures/broken/src/main/main.ts	2026-08-26 15:41:02
++++ fixtures/repaired/src/main/main.ts	2026-09-02 10:18:21
+@@ -1,5 +1,6 @@
+ import { app, BrowserWindow, ipcMain } from 'electron';
+ import * as path from 'path';
++import * as os from 'os';
+ import { registerIpcHandlers } from './ipc-handlers';
+ import { DocumentService } from '../services/document-service';
+ import { QaService } from '../services/qa-service';
+@@ -8,6 +9,12 @@
+ 
+ let mainWindow: BrowserWindow | null = null;
+ 
++// The smoke test asserts on counts, so it must not inherit a previous run's
++// data. Must be set before the app is ready.
++if (process.env.SMOKE === '1') {
++  app.setPath('userData', path.join(os.tmpdir(), `kb-smoke-${Date.now()}`));
++}
++
+ function createWindow() {
+   mainWindow = new BrowserWindow({
+     width: 1200,
+@@ -18,6 +25,9 @@
+       preload: path.join(__dirname, '..', 'preload', 'preload.js'),
+       contextIsolation: true,
+       nodeIntegration: false,
++      // Electron 33 defaults this to true, which breaks the preload's
++      // cross-module require and silently kills window.knowledgeBase.
++      sandbox: false,
+     },
+     title: 'Knowledge Base',
+   });
+@@ -30,9 +40,64 @@
+     mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+   }
+ 
++
+   mainWindow.on('closed', () => {
+     mainWindow = null;
+   });
++
++  // --- Smoke test -----------------------------------------------------------
++  // Normally this block does nothing at all.
++  //
++  // With SMOKE=1 set, the app checks whether the window<->backend connector is
++  // alive, prints the answer, and quits with an exit code the shell can read.
++  // This is the only thing that can catch a dead app: `check` and `build` both
++  // pass happily when the connector is gone.
++  if (process.env.SMOKE === '1' && mainWindow) {
++    const win = mainWindow;
++
++    // A gate that hangs is worse than one that fails. If the window never
++    // finishes loading, give up rather than blocking init.sh forever.
++    const giveUp = setTimeout(() => {
++      console.log('BRIDGE: timed out');
++      app.exit(1);
++    }, 30000);
++
++    win.webContents.on('did-finish-load', async () => {
++      clearTimeout(giveUp);
++      // window.knowledgeBase lives in the WINDOW, not here, so we have to ask.
++      const bridge = await win.webContents.executeJavaScript(
++        'typeof window.knowledgeBase'
++      );
++      console.log('BRIDGE:', bridge);
++      if (bridge !== 'object') { app.exit(1); return; }
++
++      // A live bridge is not a working app. Drive one real user path all the
++      // way through -- import, index THAT ONE document, ask, read the answer.
++      // The single-document path is deliberate: it is where a silent
++      // zero-citations bug lived, and `npm run check`, `npm run build` and the
++      // bridge check above all passed while it was broken.
++      const sample = path.join(__dirname, '..', '..', 'data',
++                               'sample-documents', 'retrieval-plan.md');
++      try {
++        const r = JSON.parse(await win.webContents.executeJavaScript(`(async () => {
++          const kb = window.knowledgeBase;
++          const doc = await kb.documents.import(${JSON.stringify(sample)});
++          await kb.indexing.start(doc.id);
++          const chunks = await kb.indexing.chunks(doc.id);
++          const ans = await kb.qa.ask('How does chunking and retrieval work?');
++          return JSON.stringify({ chunks: chunks.length,
++                                  citations: ans.citations.length });
++        })()`));
++        console.log('ROUNDTRIP:', JSON.stringify(r));
++        const ok = r.chunks > 0 && r.citations > 0;
++        if (!ok) console.log('ROUNDTRIP FAILED: expected chunks>0 and citations>0');
++        app.exit(ok ? 0 : 1);
++      } catch (e) {
++        console.log('ROUNDTRIP THREW:', String(e));
++        app.exit(1);
++      }
++    });
++  }
+ }
+ 
+ function initializeServices() {
+@@ -52,7 +117,6 @@
+ app.whenReady().then(() => {
+   initializeServices();
+   createWindow();
+-
+   app.on('activate', () => {
+     if (BrowserWindow.getAllWindows().length === 0) {
+       createWindow();
+diff -ru --exclude=node_modules --exclude=dist fixtures/broken/src/preload/preload.ts fixtures/repaired/src/preload/preload.ts
+--- fixtures/broken/src/preload/preload.ts	2026-08-26 15:41:02
++++ fixtures/repaired/src/preload/preload.ts	2026-09-01 11:22:47
+@@ -1,4 +1,4 @@
+-import { contextBridge, ipcRenderer } from 'electron';
++import { contextBridge, ipcRenderer, webUtils } from 'electron';
+ import { IPC_CHANNELS } from '../shared/types';
+ 
+ const api = {
+@@ -8,6 +8,8 @@
+     get: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.GET_DOCUMENT, id),
+     getContent: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.GET_DOCUMENT_CONTENT, id),
+     delete: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.DELETE_DOCUMENT, id),
++    // Electron 32 removed File.path; this is its supported replacement.
++    pathFor: (file: File) => webUtils.getPathForFile(file),
+   },
+   indexing: {
+     start: (documentId?: string) => ipcRenderer.invoke(IPC_CHANNELS.START_INDEXING, documentId),
+diff -ru --exclude=node_modules --exclude=dist fixtures/broken/src/renderer/App.tsx fixtures/repaired/src/renderer/App.tsx
+--- fixtures/broken/src/renderer/App.tsx	2026-08-26 15:41:02
++++ fixtures/repaired/src/renderer/App.tsx	2026-09-01 11:22:23
+@@ -1,32 +1,11 @@
+-import React, { useState, useCallback, useEffect } from 'react';
++import { useState, useCallback, useEffect } from 'react';
+ import { DocumentList } from './components/DocumentList';
+ import { QuestionPanel } from './components/QuestionPanel';
+ import { DocumentDetail } from './components/DocumentDetail';
+ import { ImportPanel } from './components/ImportPanel';
+ import { StatusBar } from './components/StatusBar';
+-import { Document, AppStatus, QAResponse } from '../../shared/types';
++import { Document, AppStatus, QAResponse } from '../shared/types';
+ 
+-declare global {
+-  interface Window {
+-    knowledgeBase: {
+-      documents: {
+-        list: () => Promise<Document[]>;
+-        import: (filePath: string) => Promise<Document>;
+-        get: (id: string) => Promise<Document | null>;
+-        delete: (id: string) => Promise<boolean>;
+-      };
+-      indexing: {
+-        start: (documentId?: string) => Promise<{ status: string }>;
+-        status: () => Promise<AppStatus>;
+-        chunks: (documentId: string) => Promise<Array<{ id: string; content: string; index: number }>>;
+-      };
+-      qa: {
+-        ask: (question: string) => Promise<QAResponse>;
+-        history: () => Promise<Array<{ question: string; response: QAResponse }>>;
+-      };
+-    };
+-  }
+-}
+ 
+ export function App() {
+   const [documents, setDocuments] = useState<Document[]>([]);
+diff -ru --exclude=node_modules --exclude=dist fixtures/broken/src/renderer/components/DocumentDetail.tsx fixtures/repaired/src/renderer/components/DocumentDetail.tsx
+--- fixtures/broken/src/renderer/components/DocumentDetail.tsx	2026-08-26 15:41:02
++++ fixtures/repaired/src/renderer/components/DocumentDetail.tsx	2026-09-01 11:22:23
+@@ -1,5 +1,5 @@
+-import React, { useEffect, useState } from 'react';
+-import { Document, Chunk } from '../../../shared/types';
++import { useEffect, useState } from 'react';
++import { Document, Chunk } from '../../shared/types';
+ 
+ interface Props {
+   document: Document;
+diff -ru --exclude=node_modules --exclude=dist fixtures/broken/src/renderer/components/DocumentList.tsx fixtures/repaired/src/renderer/components/DocumentList.tsx
+--- fixtures/broken/src/renderer/components/DocumentList.tsx	2026-08-26 15:41:02
++++ fixtures/repaired/src/renderer/components/DocumentList.tsx	2026-09-01 11:22:23
+@@ -1,5 +1,4 @@
+-import React from 'react';
+-import { Document } from '../../../shared/types';
++import { Document } from '../../shared/types';
+ 
+ interface Props {
+   documents: Document[];
+diff -ru --exclude=node_modules --exclude=dist fixtures/broken/src/renderer/components/ImportPanel.tsx fixtures/repaired/src/renderer/components/ImportPanel.tsx
+--- fixtures/broken/src/renderer/components/ImportPanel.tsx	2026-08-26 15:41:02
++++ fixtures/repaired/src/renderer/components/ImportPanel.tsx	2026-09-01 11:22:47
+@@ -1,4 +1,3 @@
+-import React from 'react';
+ 
+ interface Props {
+   onImport: (filePath: string) => void;
+@@ -25,7 +24,7 @@
+         accept=".txt,.md"
+         onChange={e => {
+           const file = e.target.files?.[0];
+-          if (file) onImport(file.path);
++          if (file) onImport(window.knowledgeBase.documents.pathFor(file));
+         }}
+         style={{ marginTop: '10px' }}
+       />
+diff -ru --exclude=node_modules --exclude=dist fixtures/broken/src/renderer/components/StatusBar.tsx fixtures/repaired/src/renderer/components/StatusBar.tsx
+--- fixtures/broken/src/renderer/components/StatusBar.tsx	2026-08-26 15:41:02
++++ fixtures/repaired/src/renderer/components/StatusBar.tsx	2026-09-01 11:22:23
+@@ -1,5 +1,4 @@
+-import React from 'react';
+-import { AppStatus } from '../../../shared/types';
++import { AppStatus } from '../../shared/types';
+ 
+ interface Props {
+   status: AppStatus;
+diff -ru --exclude=node_modules --exclude=dist fixtures/broken/src/renderer/types.d.ts fixtures/repaired/src/renderer/types.d.ts
+--- fixtures/broken/src/renderer/types.d.ts	2026-08-26 15:41:02
++++ fixtures/repaired/src/renderer/types.d.ts	2026-09-01 11:22:47
+@@ -10,6 +10,7 @@
+         get: (id: string) => Promise<import('../shared/types').Document | null>;
+         getContent: (id: string) => Promise<string | null>;
+         delete: (id: string) => Promise<boolean>;
++        pathFor: (file: File) => string;
+       };
+       indexing: {
+         start: (documentId?: string) => Promise<import('../shared/types').AppStatus>;
+diff -ru --exclude=node_modules --exclude=dist fixtures/broken/src/services/indexing-service.ts fixtures/repaired/src/services/indexing-service.ts
+--- fixtures/broken/src/services/indexing-service.ts	2026-08-26 15:41:02
++++ fixtures/repaired/src/services/indexing-service.ts	2026-09-02 10:18:21
+@@ -31,6 +31,14 @@
+       }
+       const chunks = this.chunkDocument(documentId, content);
+       this.persistence.writeJson(`${CHUNKS_DIR}/${documentId}.json`, chunks);
++      // Without this, indexing a SINGLE document wrote its chunks but never
++      // recorded them in index-meta.json -- and getAllChunks() reads only from
++      // there. Result: index one document, ask a question, get zero citations,
++      // silently. Found by an agent in session 1; the type check and the
++      // bridge smoke test both passed the whole time.
++      const chunksMeta = this.persistence.readJson<Record<string, string[]>>(INDEX_META) ?? {};
++      chunksMeta[documentId] = chunks.map(c => c.id);
++      this.persistence.writeJson(INDEX_META, chunksMeta);
+       return this.getStatus();
+     }
+ 
+diff -ru --exclude=node_modules --exclude=dist fixtures/broken/src/services/qa-service.ts fixtures/repaired/src/services/qa-service.ts
+--- fixtures/broken/src/services/qa-service.ts	2026-08-26 15:41:02
++++ fixtures/repaired/src/services/qa-service.ts	2026-09-02 11:16:25
+@@ -1,4 +1,4 @@
+-import { QAResponse, QAHistory, Citation, Chunk } from '../shared/types';
++import { QAResponse, QAHistory, Citation } from '../shared/types';
+ import { PersistenceService } from './persistence-service';
+ import { IndexingService } from './indexing-service';
+ 

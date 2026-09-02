@@ -1,0 +1,94 @@
+{
+  "project": "project-03",
+  "description": "Multi-session continuity with scope control, indexing, metadata, and grounded QA",
+  "features": [
+    {
+      "id": "window-launch",
+      "name": "Window Launch",
+      "description": "Electron app opens a BrowserWindow with correct dimensions and preload script",
+      "status": "pass",
+      "evidence": "Carried over from P2 -- verified working",
+      "testedAt": "2026-03-30T10:00:00Z"
+    },
+    {
+      "id": "document-list",
+      "name": "Document List Panel",
+      "description": "Left sidebar shows imported documents with empty state message",
+      "status": "pass",
+      "evidence": "Carried over from P2 -- verified working",
+      "testedAt": "2026-03-30T10:05:00Z"
+    },
+    {
+      "id": "question-panel",
+      "name": "Question Panel",
+      "description": "Bottom input bar accepts questions and submits via IPC",
+      "status": "pass",
+      "evidence": "Carried over from P2 -- verified working",
+      "testedAt": "2026-03-30T10:08:00Z"
+    },
+    {
+      "id": "data-directory",
+      "name": "Data Directory",
+      "description": "PersistenceService creates and manages userData/knowledge-base-data directory",
+      "status": "pass",
+      "evidence": "Carried over from P2 -- verified working",
+      "testedAt": "2026-03-30T10:10:00Z"
+    },
+    {
+      "id": "document-import",
+      "name": "Document Import",
+      "description": "Users can import .txt and .md files via ImportPanel with file picker",
+      "status": "pass",
+      "evidence": "Carried over from P2 -- verified working",
+      "testedAt": "2026-03-30T11:00:00Z"
+    },
+    {
+      "id": "document-detail",
+      "name": "Document Detail with Content",
+      "description": "DocumentDetail shows full document content, metadata, and delete button",
+      "status": "pass",
+      "evidence": "Carried over from P2 -- verified working",
+      "testedAt": "2026-03-30T11:15:00Z"
+    },
+    {
+      "id": "basic-persistence",
+      "name": "Basic Persistence",
+      "description": "Imported documents persist across app restarts via filesystem storage",
+      "status": "pass",
+      "evidence": "Carried over from P2 -- verified working",
+      "testedAt": "2026-03-30T11:30:00Z"
+    },
+    {
+      "id": "document-chunking",
+      "name": "Document Chunking",
+      "description": "IndexingService splits documents into ~500 char chunks at paragraph boundaries",
+      "status": "pass",
+      "evidence": "npm run check/build/init.sh all pass. Verified via direct service call: a 2332-char, 6-paragraph document produced 6 chunks of 386 chars each, split cleanly at paragraph boundaries.",
+      "testedAt": "2026-09-01T14:05:42Z"
+    },
+    {
+      "id": "metadata-extraction",
+      "name": "Metadata Extraction",
+      "description": "On import, extract word count, line count, and file type metadata from documents",
+      "status": "pass",
+      "evidence": "Added Document.metadata {wordCount, lineCount, fileType} computed in DocumentService.importDocument and rendered in DocumentDetail. Verified via import: metadata = {wordCount: 324, lineCount: 11, fileType: 'md'} for the test document.",
+      "testedAt": "2026-09-01T14:05:42Z"
+    },
+    {
+      "id": "indexing-status-ui",
+      "name": "Indexing Status in StatusBar",
+      "description": "StatusBar shows indexing progress with document counts and status indicator",
+      "status": "pass",
+      "evidence": "Wired the previously-unused app:status IPC channel (ipc-handlers.ts, preload.ts, types.d.ts) to combine document count and IndexingService.getStatus() into AppStatus; fixed a preload/renderer type mismatch where indexing.status() was mistyped as AppStatus but actually returns IndexStatus. Fixed IndexingService to update Document.status/chunks and index-meta.json when indexing a single document (previously only the full-library path did this, so per-document indexing never advanced the status counters). StatusBar now renders 'Indexed: X/Y'. Verified end-to-end via Electron SMOKE test (BRIDGE: object) and a direct service run: status went idle(0/1) -> ready(1/1) after indexing, with doc.status flipping to 'indexed' and chunks:6.",
+      "testedAt": "2026-09-01T14:05:42Z"
+    },
+    {
+      "id": "grounded-qa",
+      "name": "Grounded Q&A with Citations",
+      "description": "QaService returns answers with document citations and confidence scores",
+      "status": "pass",
+      "evidence": "QaService.ask() retrieves chunks via keyword overlap, returns up to 2 citations with document title/chunk index/excerpt, and confidence 0.85 with citations / 0.3 without. Verified via direct call: question 'What indexing pattern does the design document use?' returned 2 citations and confidence 0.85. History persists to qa-history.json.",
+      "testedAt": "2026-09-01T14:05:42Z"
+    }
+  ]
+}
