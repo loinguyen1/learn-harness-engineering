@@ -10,7 +10,7 @@ restart. Without one, an agent reports success and nobody finds out otherwise.
 **Do the steps in order. Step 0 is a conversation — do not skip it and do not
 guess the answers.** Steps 1 and 2 come before touching any feature work.
 
-Earned the hard way across Projects 01–03. Every rule here cost something; the
+Earned the hard way across Projects 01–04. Every rule here cost something; the
 evidence is in `project-0N/NOTES.md`.
 
 ---
@@ -23,10 +23,14 @@ evidence is in `project-0N/NOTES.md`.
 1. MEASURE    Does it build? What is already broken? Write it down.
               (No code yet? The order flips -- see Step 1.)
 2. GATE       Write init.sh. Watch it FAIL. Only then trust it.
+              Make its assertion PRINT the numbers it compared.
+2b. OBSERVE   Logs that report a size, not just a count. Sent somewhere an
+              agent can actually read.
 3. DONE       Define "done" in AGENTS.md as a command, not a feeling.
 4. EVIDENCE   feature_list.json — every feature names a command's output.
 5. MEMORY     session-handoff.md + a per-feature progress log.
-6. MAP        docs/ARCHITECTURE.md + docs/PRODUCT.md.
+6. MAP        docs/ARCHITECTURE.md + docs/PRODUCT.md, and a script in the
+              gate that ENFORCES the layer rules the doc describes.
 7. VERIFY     Break something on purpose. Does the harness notice?
 ```
 
@@ -38,7 +42,7 @@ evidence is in `project-0N/NOTES.md`.
 Q3: everything in Step 2 depends on it, and you cannot work it out alone,
 because only the human knows what the product is *for*.
 
-Ask in two or three small batches, not as a wall of ten questions.
+Ask in three or four small batches, not as a wall of twelve questions.
 
 **First batch — what am I working with?**
 
@@ -57,6 +61,14 @@ Ask in two or three small batches, not as a wall of ten questions.
    proved this.)*
 6. What breaks most often here? What are you most worried about?
 7. What has to be true before you would ship this — beyond it compiling?
+8. **When something goes wrong, how do you currently find out where?** What do
+   you look at first? *(If the answer is "I add print statements and re-run",
+   that is the gap Step 2b fills. If it is "I read the logs", ask to see one —
+   and check whether it reports sizes or only counts.)*
+9. **Are there layers or directories that must not talk to each other?** A UI
+   that must not hit the database directly, a reporting layer that must never
+   write, a module that must stay framework-free. *(These become a script in
+   Step 6, not a paragraph nobody reads.)*
 
 **Third batch — practicalities**
 
@@ -109,6 +121,19 @@ error output**, verbatim.
 
 Then audit every claim already in the repo — READMEs, a feature list, a
 progress log, a checklist — against a real command.
+
+**Drive the same path your gate will drive.** P04's baseline probe called
+`startIndexing()` with no argument — the batch path. The gate called
+`startIndexing(docId)` — the single-document path. Only the batch path worked,
+so the baseline recorded a healthy number for a tree that was broken, and the
+gate contradicted it later. **A probe that takes a different route than the gate
+is measuring a different app.**
+
+**And check whether old bugs came back.** If this starter derives from an
+upstream solution rather than from your own repaired tree, defects you already
+fixed are probably present again. P04's starter shipped with P02's duplicated
+declaration and *both* of P03's bugs. Do not assume a later stage inherited your
+repairs.
 
 **Why:** in Project 02 both the starter *and* the official solution failed to
 compile. In Project 03 the reference solution shipped
@@ -246,6 +271,35 @@ it, and reverting the fix turned the gate red on demand.
 
 **"Does it start" proves a port is open.** Reach the data and come back.
 
+### Make the assertion print what it compared
+
+This is one line of change and it is the highest-value line in the playbook.
+
+```
+BAD    if (!ok) { exit(1) }                     -> "it failed"
+GOOD   print({chunks, citations}); if (!ok) ...  -> "5 chunks, 0 citations"
+```
+
+**A gate that prints the numbers it compared is your first and cheapest
+observability.** It costs nothing, it runs on every change, and it converts
+*"something is broken"* into *"these two numbers disagree"* — which is a
+location, not an alarm.
+
+Measured in P04: an agent was handed a broken app and this one line of gate
+output —
+
+```
+ROUNDTRIP: {"chunks":5,"citations":0}
+```
+
+— and quoted it as its first move: *"chunking works (5 chunks) but Q&A returns
+0 citations."* Three files later it had the root cause. A second agent with a
+full structured logger did the same job in the same three files. **The gate's
+own output had already done the logger's work.**
+
+So: whatever your product check asserts on, print both sides of the comparison.
+`assert count > 0` should print the count.
+
 ### A real one, filled in
 
 From Project 03 — an Electron desktop app. The hardest case, because a GUI has
@@ -321,6 +375,93 @@ The last two lines are the ones a `check` + `build` gate gets wrong. **For a
 web API or a CLI, the whole of step 4 is one line of `curl` or one piped
 command** — the Electron version is long because a GUI is the awkward case, not
 because a product check is inherently hard.
+
+---
+
+## Step 2b — Observability: a size, not a count
+
+The gate says *broken*. Only the app can say *where*.
+
+Four rules below. The first is the one that gets skipped, and the second is the
+one that quietly makes the whole thing useless.
+
+### A count says the loop ran. A size says it worked.
+
+Measured in P04. The app logged this, on a completely broken index:
+
+```
+[IndexingService] chunkDocument produced 5 chunks
+```
+
+Five chunks. No error. **All five empty.** The log was there; it reported an
+occurrence and no magnitude, so it could not tell working from empty.
+
+One field turns it into a diagnosis:
+
+```
+chunkDocument complete { totalChunks: 5, totalChars: 0 }
+```
+
+**Audit every log line in the codebase for this shape.** It is everywhere:
+
+| reports a count | should also report |
+|---|---|
+| `synced 412 records` | how many bytes / non-null rows |
+| `wrote 30 files` | total size |
+| `processed 1000 messages` | how many succeeded |
+| `found 5 matches` | the matches, or their total length |
+
+### Where the log goes decides whether it exists
+
+An app can have two output streams — one a human sees on a screen, one a
+terminal captures. In Electron it is the renderer console versus the main
+process's stdout; in a web app the browser console versus the server log; in a
+mobile app the device log versus anything at all.
+
+**An agent has no screen.** A log written to the human-visible stream is a log
+your agent will never read, in a container or in CI.
+
+Route to the stream a pipe can capture. In P04 that routing decision mattered
+more than the format did — JSON was cosmetic by comparison.
+
+### Generic, not targeted
+
+| | |
+|---|---|
+| **Generic** ✓ | `{ totalChunks, totalChars }` — exposes a whole class of bugs |
+| **Targeted** ✗ | `WARN: chunks are empty!` — the answer written into the instrument |
+
+If a log line would be pointless on a codebase that did not have the bug you
+are currently chasing, delete it. A targeted line finds one bug and teaches you
+nothing about the next.
+
+### And say something on the failure path
+
+The quietest way for a search or query product to be broken is to return a
+confident answer with nothing behind it. Log the empty result, and log **two**
+numbers so the failures can be told apart:
+
+```
+WARN answered with no citations { chunksSearched: 5, chunksWithContent: 0 }
+```
+
+`chunksSearched: 0` means nothing was indexed. `5` with `0` content means five
+things were indexed and all were blank. Different bugs, different fixes.
+
+### How much is enough
+
+Startup, each boundary crossing (an IPC call, an HTTP handler, a job pickup),
+each expensive step's result **with its size**, and every failure path. That is
+it. Do not instrument every function; instrument every place a number is
+produced or crosses a layer.
+
+### How you know it works
+
+Run it against a broken tree and a working tree. Read **only** the two log
+outputs, not the code.
+
+**Can you name the broken one and the function at fault?** If you cannot, an
+agent will not either — and you have found that out before spending a day on it.
 
 ---
 
@@ -478,6 +619,49 @@ contract. The same rule applies to the harness: do not keep two copies of
 location that the code had not used for some time. Check the docs against the
 code as part of Step 1.
 
+### Enforce the boundaries, do not just describe them
+
+`ARCHITECTURE.md` explains the layers. **A script decides them.** Put the script
+in the gate, and the doc becomes commentary that cannot drift into being wrong
+without something noticing.
+
+Why it earns its place: an agent under pressure fixes **the nearest thing**, not
+the right thing. Hide the empty rows in the report; filter the bad records in
+the UI; patch the symptom one layer downstream. Every one of those turns the gate
+green and leaves the bug in place — and now the layers are tangled, so the next
+bug is untraceable.
+
+The whole check is a text search over the import lines, one rule per line:
+
+```bash
+banned <layer-dir> <regex> <why>       # 10 lines of machinery, written once
+
+banned src/renderer  "['\"](fs|path|os|child_process)['\"]"  "the window must not touch the disk"
+banned src/services  "electron|ipcMain|BrowserWindow"        "logic must not know it is in Electron"
+banned src/services  "['\"]react"                            "logic must not import UI code"
+```
+
+Rules that generalise: a UI layer must not reach the filesystem or the database
+directly; a domain/logic layer must not import its framework; a reporting layer
+must read, never write. In a data warehouse the same script greps dashboard SQL
+for `raw_` table names.
+
+| requirement | why |
+|---|---|
+| **name the offending file and line** | a violation count is not actionable |
+| **finish the round, then exit** | report every violation, not the first |
+| **under a second** | so it can live in the gate and run on every change |
+| **watch each rule fail on purpose** | a script that only prints PASS is decoration |
+
+**It reads text; it never runs the app.** A determined person routes around it.
+**A tripwire, not a lock** — and worth it, because it catches the honest mistake,
+which is the one that actually happens.
+
+**One warning from doing this in P04.** The first test added an *unused* banned
+import. The gate went red — at the type-check step, because the compiler flagged
+the unused variable first. The boundary check never ran, and the red gate looked
+like proof. It only fired once the import was genuinely used. See rule 6.
+
 ---
 
 ## Step 7 — Verify the harness, not just the code
@@ -521,6 +705,17 @@ real failure has slipped through it.
 A harness nobody runs protects nothing. Four steps that run every time beat
 twelve that get commented out.
 
+**The honest exception, and its limit.** Two steps in this playbook are
+recommended *before* a failure demands them — the boundary script (Step 6) and
+the checklist-staleness warning. Both are recommended because they are
+sub-second and because the mistake they catch is common, not because either has
+been measured stopping one. In P04 the boundary script was added and verified;
+**no agent in either arm ever crossed a boundary**, so nothing there shows it
+changes behaviour. It is insurance, priced at one second.
+
+Everything else earns its place by having caught something. If you cannot say
+what a step caught, it is a candidate for deletion — including these two.
+
 ---
 
 ## Keeping the harness alive
@@ -534,6 +729,8 @@ now matters.
 |---|---|
 | a bug reached a human that the gate should have caught | **fix the harness, not just the bug.** Add a step, then revert the fix and confirm the gate goes red |
 | a new user-facing capability shipped | the product check still covers only the old path. Widen it or add a second action |
+| a bug took more than a few files of searching to locate | the gate found it, the logs did not. Find the step that produced a count with no size, and add the size |
+| a log line reports a count and no magnitude | it cannot tell working from empty. Fix it before it costs you an afternoon |
 | a dependency major-version bump | P03's whole defect was a security default flipping in a minor Electron release. Nothing in the code changed |
 | the gate has never failed in weeks of real work | suspicious. Break something on purpose and confirm it still bites |
 | someone added a step that fails intermittently | fix it or remove it today. A flaky gate teaches people to ignore red, which is worse than having no gate |
@@ -562,6 +759,12 @@ measurement gap, and the gap will let the next one through too.
    permissions, a failed `cd` the shell carried on past, a wrong-platform
    binary twice, and the gate working exactly as designed. Every one looked
    like the code. None were.
+   P04 hit it three more times, and the third is the one to remember: an
+   *unused* banned import was added **to test the boundary script**, the gate
+   went red, and the boundary script had never executed — the type checker
+   caught the unused variable first. **A red gate proves nothing until you have
+   read which step produced the red**, including when you are testing the check
+   yourself.
 7. **Anything that records a claim goes stale** — a feature list, a checklist,
    a progress log, the docs. Something that cannot be skipped has to notice.
 8. **Verify an agent's report before believing it.** Across three sessions
@@ -612,6 +815,13 @@ tries; "stop after ~4 edits" worked.
 [ ] init.sh exists, has set -euo pipefail, and I watched it FAIL.
 [ ] init.sh does ONE real user action end to end and asserts on the answer
     (not "does it launch" -- a dead app launches and renders identically).
+[ ] init.sh PRINTS the numbers its assertion compared, not just pass/fail.
+[ ] Every log line that reports a count also reports a size.
+[ ] Logs go to a stream a pipe can capture, not a human-only console.
+[ ] I read the logs of a broken tree and a working tree, and could name the
+    broken one and the function -- without opening the source.
+[ ] Layer boundaries are enforced by a script in the gate, not only described
+    in a doc -- and I broke each rule on purpose and watched it name the file.
 [ ] init.sh runs the tests, or I said out loud why not.
 [ ] init.sh works in the environment agents will actually run in.
 [ ] AGENTS.md defines done as "./init.sh exits 0" + evidence naming a command,
@@ -643,3 +853,4 @@ Every claim here came from a measured run, not an opinion.
 | `project-01/NOTES.md` | a gate that only measures compiling proves only compiling |
 | `project-02/NOTES.md` | continuity measured: 26 files re-read vs 12 |
 | `project-03/NOTES.md` | a rendering app with nothing working; a state file wrong about 10 of 11 features; the gate upgraded and proved by regression |
+| `project-04/NOTES.md` | a log that reported 5 chunks holding 0 characters; a structured logger measured against no logger and found to add nothing, because the gate's own assertion output had already done its job |
