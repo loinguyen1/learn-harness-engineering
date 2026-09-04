@@ -35,6 +35,13 @@ measured run behind it, it says so on the spot.**
 6. MAP        docs/ARCHITECTURE.md + docs/PRODUCT.md, and a script in the
               gate that ENFORCES the layer rules the doc describes.
 7. VERIFY     Break something on purpose. Does the harness notice?
+8. CLOSE      A session ends clean or it does not end. Five conditions,
+              every one of them a command.
+
+Later floors, once the above is solid:
+   LOOPS      Run it without a human between runs.
+   GRAPHS     More than one agent, and a written answer to "where does a
+              failure go back to".
 ```
 
 ---
@@ -847,6 +854,87 @@ The third line is the whole point. The first two are easy.
 
 ---
 
+## Step 8 — Ending a session clean
+
+Steps 0–7 happen once. This one happens every time, and it is the step that
+decides whether session two starts working or starts diagnosing.
+
+**Session complete = the task passes verification AND the clean-state check
+passes.** Missing either one means the session is not done.
+
+### The five conditions
+
+Not four, and not "the code compiles". All five, every session:
+
+| # | Condition | How you know |
+|---|---|---|
+| 1 | **Build passes** | `./init.sh` exits 0. Run it, do not predict it |
+| 2 | **Tests pass** — including tests that existed before this session | the command, and its output |
+| 3 | **Progress recorded** in machine-readable form | `feature_list.json` updated, per-feature log appended |
+| 4 | **No stale artifacts** — debug logs, temp files, commented-out code, TODO markers | a grep you can name |
+| 5 | **Standard startup path works** with no manual intervention | `./init.sh` from a clean clone |
+
+Write the block into `AGENTS.md` so it is the agent's exit condition, not yours:
+
+```markdown
+## Session Exit Checklist
+- [ ] Build passes (<build command>)
+- [ ] Tests pass (<test command>) — or: none, because ___
+- [ ] feature_list.json updated
+- [ ] No debug code remaining (grep: console.log, debugger, TODO)
+- [ ] Standard startup path available (<run command>)
+```
+
+**Every box names a command.** The escape hatch on tests is deliberate — four
+projects here recorded zero test files, every time, because nothing asked. A box
+that is never true teaches people to tick without reading.
+
+### Keep the checklist short, on purpose
+
+The course's own capstone ships a 41-box version. It stops being walked. In P03 a
+checklist with 14 boxes had one ticked slightly untruthfully — and that was at
+14.
+
+**If a box duplicates a gate step, delete the box, not the step.** The checklist
+holds what the gate cannot run.
+
+### Cleanup must be idempotent
+
+Running it twice must not be worse than running it once. Anything else and the
+retry path damages the tree:
+
+```sh
+rm -f ./tmp/debug-*.log        # -f: no error when there is nothing to remove
+git checkout -- .env.local     # restore to a known state, not "the last one"
+./init.sh                      # and confirm cleanup did not break anything
+```
+
+Better than teardown: point the run at a fresh temp directory and delete nothing.
+A teardown at the bottom of a `set -e` script does not run when the script exits
+above it.
+
+### The quality document — optional, and here is the catch
+
+A per-module grade, updated per session, so the next session can find the weakest
+part without reading everything:
+
+```markdown
+## <module> (Quality: C)
+- Verification passing: partial — <what is untested>
+- Agent understandable: difficult — <why>
+- Test stability: unstable — <which>
+- Architecture boundaries: violations present
+```
+
+**The catch, measured here:** a self-assigned grade does not track the code. In
+P05 an agent scored itself 4.6, found a real defect in its own work, fixed it,
+and scored itself 4.6 again. A quality document written by the same agent that
+did the work is a mood ring. Either score it the way Step 3b says, or write only
+the factual rows — what is untested, which tests are flaky, which boundaries are
+crossed — and leave the letter off.
+
+---
+
 ## Keep it small
 
 Build the **smallest gate that catches a real break.** Add a step only when a
@@ -1054,6 +1142,9 @@ tries; "stop after ~4 edits" worked.
     defect, and the reviewer runs in a context that did not write the code.
 [ ] The reviewer cannot see the author's self-assessment, because it is not in
     the directory -- not because I told it not to look.
+[ ] AGENTS.md has a Session Exit Checklist -- the five conditions, each
+    naming a command, with an honest escape for the ones that do not apply.
+[ ] Cleanup is idempotent: I ran it twice and the second run changed nothing.
 [ ] I broke something on purpose and the harness caught it.
 [ ] I showed the human three exit codes: broken, working, and
     compiles-but-dead.
@@ -1084,33 +1175,160 @@ Every claim here came from a measured run, not an opinion.
 
 ---
 
-## What this is the ground floor of
+## Loops — running it without you
 
-Everything above is one agent, one call, started by a human. **UNEARNED** — no
-run here was a loop, and none had two agents at once. Use this to tell whether
-you are ready, not as instructions for today.
+**UNEARNED.** No run in Projects 01–05 was a loop. Everything in this section and
+the next is structure, not measurement; the two measured facts below say so.
 
-**A loop** is the same agent, restarted on a trigger, with no human between runs.
-The readiness test is not whether you have a scheduler:
+A loop is the same agent, restarted on a trigger, with no human between runs. The
+work of getting there is almost entirely the work above.
+
+### The readiness test
+
+Not "do I have a scheduler". This:
+
+> If you had to write the loop's brief tonight, would every line be a copy-paste
+> out of files that already exist?
 
 | the loop needs | you already have it as |
 |---|---|
-| a stop condition a machine can read | `./init.sh` exits 0 |
+| a machine-readable stop condition | `./init.sh` exits 0 |
 | what it must not touch | Q10's answer, in `AGENTS.md` |
+| an ordered verify sequence | the commands in your Definition of Done |
 | memory between runs | `session-handoff.md` + the per-feature log |
+| a quality bar for the checker | the Step 3b rubric |
 | an environment it can wake into unattended | `init.sh`, from a clean clone |
 
-An empty row is where the loop will fail at 3am with nobody reading the output.
-**Fix the row, not the loop.** Note what the table says about the work: none of
-it is loop tooling. It is this playbook, finished.
+**An empty row is where the loop fails at 3am with nobody reading the output.
+Fix the row, not the loop.** Note what the table says about the work: none of it
+is loop tooling. It is this playbook, finished.
 
-Two rules from Mechanics, both against the usual advice:
+### `goal.md` — the brief, and it is a readout
 
-- **A loop's stop condition is an exit code, never a duration.** Stopping on time
-  took three attempts here even with someone watching.
-- **Serialise first, isolate second.** Two runs in parallel, one deleted the
-  other's history sixty seconds in.
+Seven sections, and each one already has a home:
 
-**A graph** is more than one agent plus a written answer to *where does a failure
-go back to.* Draw one only when there are branches or rollbacks. A twenty-step
-line is a script, however long it is.
+| Section | Contents | Comes from |
+|---|---|---|
+| `## Goal` | one sentence | the human |
+| `## Acceptance Criteria` | checkboxes, each checkable by a command | your gate |
+| `## Scope` | `### Fair game` and `### Hands off`, as paths | Q10 + `feature_list.json` |
+| `## Verification Method` | the commands, **in order**, "fix failures before the next step" | Definition of Done |
+| `## Stop Conditions` | all criteria pass · max turns · no progress for N rounds · blocked | you |
+| `## How to Work` | read `AGENTS.md` and `feature_list.json` first | the harness |
+| `## Output` | what to write back, and where | `session-handoff.md` |
+
+**Four stop conditions, not one.** "All criteria pass" is the happy path; the
+other three are what stops a loop that is going nowhere — *max turns reached*,
+*same error three rounds running*, *blocked and cannot resolve alone*.
+
+### Maker and checker
+
+Two prompts, never one agent playing both. This is Step 3b again, running every
+round instead of once.
+
+- **Maker** implements, self-verifies that it at least runs, and hands over a
+  fixed block: what changed · files touched · build/lint/test results · known
+  issues · **the parts it is unsure about**, for the checker to aim at.
+- **Checker** is told plainly: *you are here to find fault; not finding problems
+  is your failure.* Every issue carries four things — description, file and line,
+  evidence, severity. It ends on Pass / Fail / minor-and-acceptable, with the raw
+  command output attached.
+
+`loop-state.md` carries the memory between rounds: round number, what the maker
+did, what the checker found, pass/fail, whether a human stepped in and why. Read
+it at the start of a round, write it at the end.
+
+### The two rules that came from measurement here
+
+- **A stop condition is an exit code, never a duration.** Stopping a run at the
+  right moment took three attempts here *with* a human watching; only counting
+  file edits worked. A loop has nobody watching.
+- **Serialise first, isolate second.** Two runs went parallel on one mount and
+  one deleted the other's in-flight history sixty seconds in. Caught by
+  timestamps alone. The fix that shipped was refusing to start a second run — not
+  isolating it better.
+
+### Four costs that arrive quietly
+
+| Cost | What it looks like | The fix |
+|---|---|---|
+| Verification debt | "looks fine" replaces "confirmed" | stop conditions machine-checkable, always |
+| Comprehension rot | the loop ships faster than you read | fast loops need fast reading |
+| Cognitive surrender | you stop having opinions about the output | the loop cannot tell the difference. You can |
+| Token blowout | context grows roughly quadratically per turn | **a day-one concern, not a bolt-on** |
+
+The last one lands back on this playbook: keep `AGENTS.md` a short entrypoint
+that links out, keep state files summary-first, and put each fact in one place.
+A harness already near the context limit on a single manual run has no headroom
+to iterate.
+
+### The ladder
+
+1. **Goal runner** — one task, one stop condition, agent loops until met.
+2. **Scheduled single task** — one automation, one job, on a timer.
+3. **Maker/checker split** — two roles, isolated.
+4. **Self-feeding** — the loop picks its own next task from external state.
+5. **Fleet** — several loops, independent, sharing one memory layer.
+
+**Level 1 pays back fastest.** Do not install a scheduler before you have
+something worth running twice.
+
+---
+
+## Graphs — when one loop stops being enough
+
+**UNEARNED here too**, and the bar is higher than it sounds.
+
+A loop is a **deferred** decision: one agent absorbs everything, and when it gets
+stuck the failure mode is invisible — the agent does not know where it is stuck.
+A graph is an **up-front** decision: you declare who owns what and where each
+failure returns to, and you get readability, auditability and local repair.
+
+> A loop hides the problem inside the loop. A graph puts the problem on paper.
+
+### The four parts
+
+| Part | What it is |
+|---|---|
+| **Node** | a unit of work: deterministic code, a model call, a tool, or a whole agent. *What a node is allowed to be is the line between a graph and a workflow* |
+| **Edge** | a handoff — and it can be parallel, conditional, retry-into-itself, or a rollback several hops back |
+| **Shared state** | one workspace every node reads and writes. **Only state is shared; node context stays private** |
+| **Routing rules** | where execution goes next, in plain if-then, returning node names |
+
+`graph.md` is one file: a mermaid diagram, a node table, an edge table, the
+shared-state fields with who writes each, and a routing table of
+`current node | condition | next node`.
+
+### Do you actually need one
+
+Five criteria — **you need three**:
+
+1. the task splits into genuinely independent units
+2. **there are branch or rollback paths**
+3. intermediate state is worth checkpointing
+4. every node has an automatically checkable definition of done
+5. coordination benefit beats coordination cost
+
+**Scale is not the criterion — branches are.** A twenty-step line is a script,
+however long. Five nodes with a real rollback and an approval is a graph. Score
+below three and what you needed was a better script.
+
+### Two things not to skip
+
+- **Anchors.** Something outside the graph that says *the number moved but the
+  world did not* — real outcomes, ground truth, human spot-checks. A network of
+  loops with no anchor is a resonance of mutual drift.
+- **The orchestration tax.** Starting an agent is a keystroke; closing the loop
+  on one means someone reconciles what came back. There is one of you. More nodes
+  parallelise the part that was never the bottleneck.
+
+### You have already built one
+
+This playbook is a small graph and pays a graph's costs without the vocabulary.
+Its nodes: `init.sh` (deterministic), the Step 3b reviewer (an agent, in a
+context that did not write the code), the human at Step 0 and at Step 7's report.
+Its shared state is four files. Its routing table is *Keeping the harness alive*
+— trigger, then what to do.
+
+Which is the point of the last two sections. **The floors above are not new
+tooling. They are this playbook, finished, and then wired together.**
