@@ -5,3 +5,6 @@ dist/
 
 # Live run directories — scratch. archive-run.sh copies the record into results/.
 project-*/runs/
+
+# Blind-scoring staging — score.sh rebuilds it from scratch each run.
+project-*/.scoring/
