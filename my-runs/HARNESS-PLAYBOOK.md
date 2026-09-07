@@ -23,7 +23,8 @@ measured run behind it, it says so on the spot.**
               do not understand.
 1. MEASURE    Does it build? What is already broken? Write it down.
               (No code yet? The order flips -- see Step 1.)
-2. GATE       Write init.sh. Watch it FAIL. Only then trust it.
+2. GATE       Write init.sh: install, check, build, test, and ONE REAL
+              USER ACTION. Watch it FAIL, and read WHICH step went red.
               Make its assertion PRINT the numbers it compared.
 2b. OBSERVE   Logs that report a size, not just a count. Sent somewhere an
               agent can actually read.
@@ -44,6 +45,12 @@ Later floors, once the above is solid:
               failure go back to".
 ```
 
+**Under time pressure, the two that matter are `BASELINE.md` and `init.sh`** —
+with a product check in it. Everything else is an amplifier.
+
+**Before you run anything, skim Mechanics at the bottom.** Half a day of the
+failures recorded in this playbook were environment, not code.
+
 ---
 
 ## Step 0 — Interview the human
@@ -63,6 +70,37 @@ Ask in three or four small batches, not as a wall of twelve questions.
    fetch a real record, run a real query, get a real answer.
 4. What should that action give back that I can check? A number, a string, a
    status code — something a script can compare.
+
+**When there is no user, Q3 still has an answer.** Substitute:
+
+| shape | the one action | what you assert on |
+|---|---|---|
+| batch / scheduled job | one run over a known input | the **output artifact**: its location, its row count, its non-null counts |
+| library / SDK | a throwaway consumer installs the built package and calls the public API | the returned value — this also catches packaging bugs |
+| a repo of prompts, configs or docs | render or execute one unit | the shape of the output: required sections present, forbidden content absent |
+| infrastructure | apply to a scratch environment | one resource actually responds |
+
+**And assert on WHERE the output landed, not only what is in it.** A pipeline
+that writes a perfect file to the wrong key has failed, and every content-only
+check passes. This is the trap that got a trial harness green on a dead tree.
+
+4b. **Does the failure path exit non-zero?** If upstream is down, does the
+   process die loudly or does the scheduler get a green tick forever? For
+   anything unattended, this is the highest-value single assertion you own.
+4c. **What happens if it runs twice?** Retries, backfills, an operator
+   re-running yesterday. Doubling the data is the classic scheduled-job bug and
+   nothing else in this playbook will catch it.
+
+**Credentials and external services — ask before you write the gate.**
+
+4d. **What does this need to run that is not in the repo?** Database, object
+   store, a paid API, an auth session. Each one is either a disposable local
+   instance or a recorded fake — decide which, per service, now.
+4e. **Which credentials?** The gate reads them from the environment and fails
+   with the *missing variable named*, never from a committed file. `init.sh`
+   is committed; a token in it is a token in your history.
+4f. **Is there a login in front of the one real action?** Then the gate needs a
+   test user and a cookie or token before it can reach anything. Budget for it.
 
 **Second batch — what should the gate include?**
 
@@ -115,7 +153,8 @@ Nothing to measure, and Q3 has no answer yet — the app does not exist. So:
 
 1. **Ask the human what the first user action will be** (Q3, in the future
    tense). *"A user posts a task and gets it back with an id."*
-2. **Write `init.sh` with that as its last step, before any code exists.**
+2. **Go and read Step 2 now**, then write `init.sh` to its rules with that
+   action as its last step, before any code exists.
    Run it. It fails, loudly, because the thing it checks is not built. **That
    is the correct starting state** — you have watched it fail, so you can trust
    it from here.
@@ -137,8 +176,22 @@ commands are:
 <install> && <typecheck/lint> && <build> && <test>
 ```
 
+**Three of those four slots are empty on most projects, and that is a finding,
+not a failure.** Python: `pip install -e .` / `ruff` and `mypy` if annotated /
+no build step, say so in a comment / `pytest`. Ruby: `bundle install` /
+`rubocop` / none / `rspec`. A repo of markdown and prompts: none of the four —
+write `BASELINE.md` saying the measurable surface is zero, because that tells
+you the gate must be built from nothing rather than assembled from what exists.
+
+**If the project's own commands do not run on your machine, that IS day one's
+work** — and nothing downstream is real until it is done. A trial on a legacy
+tree that would not `bundle install` produced a gate printing "All checks
+passed" against a tree with a gutted money calculation. Record the blocker in
+`BASELINE.md` and fix the environment before writing a line of gate.
+
 Write the result into `BASELINE.md`: what passes, what fails, and the **actual
-error output**, verbatim.
+error output**, verbatim. Include the architecture and product docs in the
+audit — a doc that disagrees with the code is a defect you have just found.
 
 Then audit every claim already in the repo — READMEs, a feature list, a
 progress log, a checklist — against a real command.
@@ -186,7 +239,7 @@ echo "All checks passed."
 |---|---|
 | `set -euo pipefail` on line 2 | Without it a failed step is skipped and the success line prints anyway. That is a lie your future self will believe. |
 | The success message is the **last** line | It must be structurally unreachable after a failure. |
-| **Run it on the broken code and watch it fail** | A check you have never seen fail is a check you cannot trust. |
+| **Run it on the broken code and watch it fail** | A check you have never seen fail is a check you cannot trust. **Then read WHICH step produced the red** — "it failed" is not "it found the bug". |
 | One command, no arguments | If it needs explaining, it will not get run. |
 
 Prove it lies without `set -e` — worth doing once, by hand:
@@ -238,20 +291,37 @@ The shape, in any language:
 start it  →  do ONE real user action  →  check the answer  →  exit 0 or non-zero
 ```
 
-Usually one line of shell. Only a GUI app needs code inside it, because it has
-no command-line surface to poke.
+Sometimes one line of shell. **Often twenty or more** — anything with a server
+to start, a login to pass, a database to provision or an output artifact to read
+back needs real code here. Budget for that; a one-liner is the exception.
 
-| project type | the one action | in the gate |
+| project type | the one action | the trap |
 |---|---|---|
-| web API | fetch a real record | `curl -f localhost:3000/users/1` |
-| website | assert real content is on the page | `curl -s localhost:3000 \| grep -q "Sign in"` |
-| CLI tool | run it on known input | `mytool sample.txt \| grep -q expected` |
-| database-backed | read one real row | `psql -c "select 1 from users limit 1"` |
-| worker/queue | enqueue one job, assert it completed | poll the status, fail on timeout |
+| web API | fetch a real record **as a logged-in user** and assert on the body | `curl -f` exits 0 on a 302 to `/login`. Measured. Assert on content, not status |
+| website | assert real content is on the page | a login redirect renders fine. Grep for something only the real page has |
+| CLI tool | run it on known input | none — this is the easy case |
+| database-backed | drive the **app's** read path | `psql -c "select 1"` passes with the application deleted from disk. It never touches your code |
+| worker / queue | enqueue one job, assert **what it produced** | "it completed" is the failure mode. A job that completes and writes garbage exits 0 |
+| batch / scheduled | one run over a fixture | assert the output's **location and shape**, then run it again and assert nothing doubled |
 | desktop / GUI | the app checks itself and exits with a code | see below |
 
-**Give it a clean slate.** Point the app at a temporary data directory for the
-duration of the check, or its results drift as old data accumulates.
+**Give it a clean slate.** For a filesystem app, point it at a temporary data
+directory. **For anything server-backed — Postgres, Redis, S3 — there is no
+directory to point at.** Stand up a disposable instance on a non-default port,
+`trap` its teardown, and inject the endpoint by environment variable. If that
+means the app needs a config seam it does not have, adding the seam is part of
+the work.
+
+**Third-party services get a fake, not a credential.** A recorded fixture, a
+local emulator, or a stub server you start in the gate. A gate pointed at shared
+staging is not a gate — it fails when someone else deploys and passes when your
+code is broken.
+
+**The gate must have a runtime budget.** If the honest product check takes forty
+minutes, nobody runs it and you have no gate. Split it: `init.sh` for the
+seconds-to-minutes checks that run on every change, and a second named script
+for the slow honest one that runs before merge. Say plainly in `AGENTS.md` which
+one "done" means.
 
 **A GUI app** has to be driven from inside: launch it with a flag
 (`SMOKE=1`), have it perform the action, print the result, and call its own
@@ -678,8 +748,13 @@ feature_list.json is a claim, not a fact.
   overwrite it.
 ```
 
-An agent given this rule ran the gate against eleven `pass` entries, found the
-app dead, fixed it, and annotated the false claim rather than overwriting it.
+Two sessions in P03 show both halves. One had no Trust rule, ran the gate
+anyway, and found the app dead behind eleven detailed `pass` entries — **the
+gate did that work, not the rule.** The next session did have the rule, and
+"ran `./init.sh` rather than believing eleven `pass` entries"; everything it
+inherited was genuinely fine, and it spent the time correcting a doc that
+disagreed with the code instead. The rule buys you the check when the gate would
+not have been run at all.
 
 ---
 
@@ -771,6 +846,22 @@ contract. The same rule applies to the harness: do not keep two copies of
 location that the code had not used for some time. Check the docs against the
 code as part of Step 1.
 
+### On an existing codebase, ratchet instead of failing
+
+A trial on a legacy tree wrote three correct rules and got **800 violations in
+60ms.** A gate that is red on day one is a gate someone deletes on day two.
+
+Record today's count as the baseline and **fail only on an increase**:
+
+```bash
+[ "$VIOLATIONS" -le "$(cat .boundary-baseline)" ] || {
+  echo "BOUNDARY: $VIOLATIONS violations, baseline $(cat .boundary-baseline)"; exit 1; }
+```
+
+The number only ever goes down. Also note: a language that autoloads by
+convention — Rails, Django — has no import lines to grep. Grep for the call
+instead (`\.where\(`, `redirect_to`), and accept it is coarser.
+
 ### Enforce the boundaries, do not just describe them
 
 `ARCHITECTURE.md` explains the layers. **A script decides them.** Put the script
@@ -786,7 +877,15 @@ bug is untraceable.
 The whole check is a text search over the import lines, one rule per line:
 
 ```bash
-banned <layer-dir> <regex> <why>       # 10 lines of machinery, written once
+banned() {                              # the ten lines, written once
+  local dir="$1" re="$2" why="$3"
+  local hits; hits=$(grep -rInE "$re" "$dir" 2>/dev/null || true)
+  [ -z "$hits" ] && return 0
+  echo "BOUNDARY: $why"; echo "$hits"; VIOLATIONS=$((VIOLATIONS+1))
+}
+# ...and at the end of the script: [ "$VIOLATIONS" -eq 0 ] || exit 1
+
+banned <layer-dir> <regex> <why>
 
 banned src/renderer  "['\"](fs|path|os|child_process)['\"]"  "the window must not touch the disk"
 banned src/services  "electron|ipcMain|BrowserWindow"        "logic must not know it is in Electron"
@@ -878,15 +977,21 @@ Write the block into `AGENTS.md` so it is the agent's exit condition, not yours:
 
 ```markdown
 ## Session Exit Checklist
-- [ ] Build passes (<build command>)
-- [ ] Tests pass (<test command>) — or: none, because ___
+- [ ] ./init.sh exits 0          <- covers build, tests and the startup path
 - [ ] feature_list.json updated
 - [ ] No debug code remaining (grep: console.log, debugger, TODO)
-- [ ] Standard startup path available (<run command>)
+- [ ] <the eye check the gate cannot run>
 ```
 
-**Every box names a command.** The escape hatch on tests is deliberate — four
-projects here recorded zero test files, every time, because nothing asked. A box
+**Box one collapses the first three conditions**, because a box that re-runs a
+gate step is the duplication Step 5 tells you to delete. This block and
+`clean-state-checklist.md` are the same artifact: keep the file, and let this
+block in `AGENTS.md` be the pointer to it. Do not maintain two.
+
+**Every box names a command.** Two escape hatches are deliberate. No test suite:
+write `none, because ___` — four projects here recorded zero test files, every
+time, because nothing asked. A suite that has been **red for months**: name the
+count you inherited and fail on an increase, the same ratchet as Step 6. A box
 that is never true teaches people to tick without reading.
 
 ### Keep the checklist short, on purpose
