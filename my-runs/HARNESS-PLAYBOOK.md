@@ -10,8 +10,9 @@ restart. Without one, an agent reports success and nobody finds out otherwise.
 **Do the steps in order. Step 0 is a conversation — do not skip it and do not
 guess the answers.** Steps 1 and 2 come before touching any feature work.
 
-Earned the hard way across Projects 01–04. Every rule here cost something; the
-evidence is in `project-0N/NOTES.md`.
+Earned the hard way across Projects 01–05. Every rule here cost something; the
+evidence is in `project-0N/NOTES.md`. **Where something is recommended without a
+measured run behind it, it says so on the spot.**
 
 ---
 
@@ -22,17 +23,33 @@ evidence is in `project-0N/NOTES.md`.
               do not understand.
 1. MEASURE    Does it build? What is already broken? Write it down.
               (No code yet? The order flips -- see Step 1.)
-2. GATE       Write init.sh. Watch it FAIL. Only then trust it.
+2. GATE       Write init.sh: install, check, build, test, and ONE REAL
+              USER ACTION. Watch it FAIL, and read WHICH step went red.
               Make its assertion PRINT the numbers it compared.
 2b. OBSERVE   Logs that report a size, not just a count. Sent somewhere an
               agent can actually read.
 3. DONE       Define "done" in AGENTS.md as a command, not a feeling.
+3b. REVIEW    For the part no command can check: a reviewer that did not
+              write the code, scoring against a written rubric.
 4. EVIDENCE   feature_list.json — every feature names a command's output.
 5. MEMORY     session-handoff.md + a per-feature progress log.
 6. MAP        docs/ARCHITECTURE.md + docs/PRODUCT.md, and a script in the
               gate that ENFORCES the layer rules the doc describes.
 7. VERIFY     Break something on purpose. Does the harness notice?
+8. CLOSE      A session ends clean or it does not end. Five conditions,
+              every one of them a command.
+
+Later floors, once the above is solid:
+   LOOPS      Run it without a human between runs.
+   GRAPHS     More than one agent, and a written answer to "where does a
+              failure go back to".
 ```
+
+**Under time pressure, the two that matter are `BASELINE.md` and `init.sh`** —
+with a product check in it. Everything else is an amplifier.
+
+**Before you run anything, skim Mechanics at the bottom.** Half a day of the
+failures recorded in this playbook were environment, not code.
 
 ---
 
@@ -54,6 +71,37 @@ Ask in three or four small batches, not as a wall of twelve questions.
 4. What should that action give back that I can check? A number, a string, a
    status code — something a script can compare.
 
+**When there is no user, Q3 still has an answer.** Substitute:
+
+| shape | the one action | what you assert on |
+|---|---|---|
+| batch / scheduled job | one run over a known input | the **output artifact**: its location, its row count, its non-null counts |
+| library / SDK | a throwaway consumer installs the built package and calls the public API | the returned value — this also catches packaging bugs |
+| a repo of prompts, configs or docs | render or execute one unit | the shape of the output: required sections present, forbidden content absent |
+| infrastructure | apply to a scratch environment | one resource actually responds |
+
+**And assert on WHERE the output landed, not only what is in it.** A pipeline
+that writes a perfect file to the wrong key has failed, and every content-only
+check passes. This is the trap that got a trial harness green on a dead tree.
+
+4b. **Does the failure path exit non-zero?** If upstream is down, does the
+   process die loudly or does the scheduler get a green tick forever? For
+   anything unattended, this is the highest-value single assertion you own.
+4c. **What happens if it runs twice?** Retries, backfills, an operator
+   re-running yesterday. Doubling the data is the classic scheduled-job bug and
+   nothing else in this playbook will catch it.
+
+**Credentials and external services — ask before you write the gate.**
+
+4d. **What does this need to run that is not in the repo?** Database, object
+   store, a paid API, an auth session. Each one is either a disposable local
+   instance or a recorded fake — decide which, per service, now.
+4e. **Which credentials?** The gate reads them from the environment and fails
+   with the *missing variable named*, never from a committed file. `init.sh`
+   is committed; a token in it is a token in your history.
+4f. **Is there a login in front of the one real action?** Then the gate needs a
+   test user and a cookie or token before it can reach anything. Budget for it.
+
 **Second batch — what should the gate include?**
 
 5. Is there a test suite? Should the gate run it? *(Say plainly: if the gate
@@ -61,6 +109,11 @@ Ask in three or four small batches, not as a wall of twelve questions.
    proved this.)*
 6. What breaks most often here? What are you most worried about?
 7. What has to be true before you would ship this — beyond it compiling?
+7b. **Which parts of "good" can no command check?** Layout, wording, whether
+   the answer actually answers the question, whether the code is
+   maintainable. *(These are Step 3b's job. If the honest answer is "none of
+   it", say so and skip Step 3b — a reviewer you do not need is the most
+   expensive thing in this playbook.)*
 8. **When something goes wrong, how do you currently find out where?** What do
    you look at first? *(If the answer is "I add print statements and re-run",
    that is the gap Step 2b fills. If it is "I read the logs", ask to see one —
@@ -77,7 +130,13 @@ Ask in three or four small batches, not as a wall of twelve questions.
 9. Where will agents run — your machine, a container, CI? *(This decides
    whether the gate needs a fake display, and it is the source of the most
    wasted afternoons: see Mechanics.)*
-10. Anything I must not touch?
+9b. **When you finish a work session on this, what has to be true before you
+   walk away?** Push every answer until it names a command. *(This is what
+   Step 5's checklist will hold. Source it from the human — they know which
+   check nobody remembers to run.)*
+10. Anything I must not touch? *(Write the answer into `AGENTS.md` as a literal
+   list of paths, not a sentiment. **No written constraint, no constraint** —
+   rule 1. An answer that lives only in this conversation protects nothing.)*
 
 **Then say back what you heard**, in the form of the check you intend to write,
 and get agreement before writing it. If the human cannot answer Q3, that is the
@@ -94,7 +153,8 @@ Nothing to measure, and Q3 has no answer yet — the app does not exist. So:
 
 1. **Ask the human what the first user action will be** (Q3, in the future
    tense). *"A user posts a task and gets it back with an id."*
-2. **Write `init.sh` with that as its last step, before any code exists.**
+2. **Go and read Step 2 now**, then write `init.sh` to its rules with that
+   action as its last step, before any code exists.
    Run it. It fails, loudly, because the thing it checks is not built. **That
    is the correct starting state** — you have watched it fail, so you can trust
    it from here.
@@ -116,8 +176,22 @@ commands are:
 <install> && <typecheck/lint> && <build> && <test>
 ```
 
+**Three of those four slots are empty on most projects, and that is a finding,
+not a failure.** Python: `pip install -e .` / `ruff` and `mypy` if annotated /
+no build step, say so in a comment / `pytest`. Ruby: `bundle install` /
+`rubocop` / none / `rspec`. A repo of markdown and prompts: none of the four —
+write `BASELINE.md` saying the measurable surface is zero, because that tells
+you the gate must be built from nothing rather than assembled from what exists.
+
+**If the project's own commands do not run on your machine, that IS day one's
+work** — and nothing downstream is real until it is done. A trial on a legacy
+tree that would not `bundle install` produced a gate printing "All checks
+passed" against a tree with a gutted money calculation. Record the blocker in
+`BASELINE.md` and fix the environment before writing a line of gate.
+
 Write the result into `BASELINE.md`: what passes, what fails, and the **actual
-error output**, verbatim.
+error output**, verbatim. Include the architecture and product docs in the
+audit — a doc that disagrees with the code is a defect you have just found.
 
 Then audit every claim already in the repo — READMEs, a feature list, a
 progress log, a checklist — against a real command.
@@ -165,7 +239,7 @@ echo "All checks passed."
 |---|---|
 | `set -euo pipefail` on line 2 | Without it a failed step is skipped and the success line prints anyway. That is a lie your future self will believe. |
 | The success message is the **last** line | It must be structurally unreachable after a failure. |
-| **Run it on the broken code and watch it fail** | A check you have never seen fail is a check you cannot trust. |
+| **Run it on the broken code and watch it fail** | A check you have never seen fail is a check you cannot trust. **Then read WHICH step produced the red** — "it failed" is not "it found the bug". |
 | One command, no arguments | If it needs explaining, it will not get run. |
 
 Prove it lies without `set -e` — worth doing once, by hand:
@@ -217,20 +291,37 @@ The shape, in any language:
 start it  →  do ONE real user action  →  check the answer  →  exit 0 or non-zero
 ```
 
-Usually one line of shell. Only a GUI app needs code inside it, because it has
-no command-line surface to poke.
+Sometimes one line of shell. **Often twenty or more** — anything with a server
+to start, a login to pass, a database to provision or an output artifact to read
+back needs real code here. Budget for that; a one-liner is the exception.
 
-| project type | the one action | in the gate |
+| project type | the one action | the trap |
 |---|---|---|
-| web API | fetch a real record | `curl -f localhost:3000/users/1` |
-| website | assert real content is on the page | `curl -s localhost:3000 \| grep -q "Sign in"` |
-| CLI tool | run it on known input | `mytool sample.txt \| grep -q expected` |
-| database-backed | read one real row | `psql -c "select 1 from users limit 1"` |
-| worker/queue | enqueue one job, assert it completed | poll the status, fail on timeout |
+| web API | fetch a real record **as a logged-in user** and assert on the body | `curl -f` exits 0 on a 302 to `/login`. Measured. Assert on content, not status |
+| website | assert real content is on the page | a login redirect renders fine. Grep for something only the real page has |
+| CLI tool | run it on known input | none — this is the easy case |
+| database-backed | drive the **app's** read path | `psql -c "select 1"` passes with the application deleted from disk. It never touches your code |
+| worker / queue | enqueue one job, assert **what it produced** | "it completed" is the failure mode. A job that completes and writes garbage exits 0 |
+| batch / scheduled | one run over a fixture | assert the output's **location and shape**, then run it again and assert nothing doubled |
 | desktop / GUI | the app checks itself and exits with a code | see below |
 
-**Give it a clean slate.** Point the app at a temporary data directory for the
-duration of the check, or its results drift as old data accumulates.
+**Give it a clean slate.** For a filesystem app, point it at a temporary data
+directory. **For anything server-backed — Postgres, Redis, S3 — there is no
+directory to point at.** Stand up a disposable instance on a non-default port,
+`trap` its teardown, and inject the endpoint by environment variable. If that
+means the app needs a config seam it does not have, adding the seam is part of
+the work.
+
+**Third-party services get a fake, not a credential.** A recorded fixture, a
+local emulator, or a stub server you start in the gate. A gate pointed at shared
+staging is not a gate — it fails when someone else deploys and passes when your
+code is broken.
+
+**The gate must have a runtime budget.** If the honest product check takes forty
+minutes, nobody runs it and you have no gate. Split it: `init.sh` for the
+seconds-to-minutes checks that run on every change, and a second named script
+for the slow honest one that runs before merge. Say plainly in `AGENTS.md` which
+one "done" means.
 
 **A GUI app** has to be driven from inside: launch it with a flag
 (`SMOKE=1`), have it perform the action, print the result, and call its own
@@ -494,6 +585,133 @@ it, and so each feature has its own proof rather than a shared one.
 
 ---
 
+## Step 3b — The part no command can check
+
+Everything up to here assumes "done" can be written as an assertion. Most of it
+can. Some of it cannot: is the layout usable, does the answer actually answer
+the question, would a reviewer merge this without comment.
+
+For that part the question is not *what do you check*. It is **who holds the
+pen.**
+
+### The rule
+
+**Whatever scores the work must not be whatever wrote it.**
+
+Not because agents lie. Measured in P05 on *identical code* — one
+implementation scored twice, differing only in whether the scorer had written
+it:
+
+| Criterion | Self | Independent |
+|---|---:|---:|
+| functional completeness | 5 | 5 |
+| role distinction | 5 | 5 |
+| citation display | 5 | 5 |
+| edge cases | 5 | 5 |
+| visual design | 4 | **2** |
+| interactivity | 5 | **3** |
+| timestamps | 5 | 4 |
+| code quality | 4 | 3 |
+| **mean** | **4.75** | **4.00** |
+
+**The four that matched are the checkable ones. The four that moved are the
+judgment calls.** The generator did not misreport its work — it graded itself
+exactly right wherever "right" had an answer, and rounded up wherever it did
+not. The 0.75 gap is 7.5x the scorer's own noise, measured over replicates.
+
+Self-review was not lazy, either. One agent found a genuine defect in its own
+code by cross-referencing a file it had not written — and then scored itself
+4.6, fixed the bug, and scored itself 4.6 again. **The generosity is in the
+number, not the prose, and the number does not track the code.**
+
+> Separate the reviewer where a script cannot decide. Where a script *can*
+> decide, self-review was accurate — and a script is cheaper than either.
+
+### Three files, three calls
+
+| File | What it holds |
+|---|---|
+| `brief.md` | requirements as observable behaviour, the constraints, and "a filled rubric is part of done" |
+| `rubric.md` | 5–8 criteria, scored 1–5, blank |
+| `revise.md` | apply every required revision; record disagreement, do not act on it |
+
+Then: **generate → review in a fresh context → revise.** Three calls. No
+framework.
+
+A fresh context means a new session, a subagent, or a different model — not the
+same session told to "now act as a reviewer". Verify that the separation is
+real rather than assuming it: have the second call answer something it could
+only know by having read the first call's files. If it can, you have one
+context, not two.
+
+### The two lines that make a rubric work
+
+```markdown
+Every score below 5 requires a concrete defect in the Notes column.
+"Could be better" is not a defect. Name the line, the input, or the interaction.
+
+5 means a reviewer would merge it without comment.
+```
+
+Without the first line you collect vibes with numbers attached. Without the
+second, everything is a 4.
+
+### Strip the author's self-assessment mechanically
+
+Do not instruct the reviewer to ignore it. Copy the source files into a clean
+directory and leave every note the author wrote behind. An instruction not to
+look is not a control.
+
+### Never compare two scores from different scorers
+
+The course's own P05 solution reports 1.6 → 3.3 → 4.9 across its three variants.
+Read the header of each rubric: the 1.6 is marked *"Evaluator: Self"*, the 4.9
+was scored by a dedicated evaluator. **That gradient compares scorers at least
+as much as it compares code.**
+
+For scale: every self-score in P05's own four arms landed 4.4–4.75, while the
+course's self-score was 1.6. Two self-scores three points apart is a wider
+spread than the entire effect being claimed.
+
+If you are going to compare at all: **one fixed scorer, run after everything
+finishes, seeing only the source and the frozen brief** — never which variant
+it is looking at, never the variant's own notes. Otherwise report one score and
+make no comparison.
+
+That was run. Four arms, one blind scorer, arms shuffled and the key written
+only afterwards:
+
+| arm | contexts | reviewer | blind score |
+|---|---:|---|---:|
+| A single | 1 | itself | 4.0 |
+| A+ single + rubric | 1 | itself, holding the rubric | 4.4 |
+| B gen-eval | 2 | fresh context | **4.5** |
+| C plan-gen-eval | 3 | fresh context, against a contract | 4.1 |
+| *untouched placeholder* | — | — | *1.37* |
+
+**The course's gradient did not reproduce.** It reports the three-role variant
+highest by a wide margin; scored blind, the three-role arm came fourth of four
+and the two-role arm came first. n=1 per arm, one replicate each.
+
+### Do not pay a reviewer for what a script can check
+
+The reviewer earns its cost exactly in the space an assertion cannot reach. Put
+functional completeness, edge cases and wiring in `init.sh`, where they are free
+and repeatable, and spend the review on layout, interaction and maintainability.
+This is the other half of P04's finding: the gate's own assertion output already
+carried the checkable signal.
+
+**And the rubric is worth more than the second context.** In the blind numbers
+above, handing a single agent the rubric moved it 4.0 -> 4.4; adding a whole
+separate reviewer on top moved it 4.4 -> 4.5. The first is one line in a prompt.
+The second is an extra agent call every iteration.
+
+So: **write the rubric first and run it single-context. Add the separate
+reviewer when you need the score to be honest, not to make the code better** —
+that is what the 4.75-vs-4.00 pair measures, and it is a different job.
+
+---
+
 ## Step 4 — `feature_list.json` with a real evidence field
 
 ```json
@@ -530,8 +748,13 @@ feature_list.json is a claim, not a fact.
   overwrite it.
 ```
 
-An agent given this rule ran the gate against eleven `pass` entries, found the
-app dead, fixed it, and annotated the false claim rather than overwriting it.
+Two sessions in P03 show both halves. One had no Trust rule, ran the gate
+anyway, and found the app dead behind eleven detailed `pass` entries — **the
+gate did that work, not the rule.** The next session did have the rule, and
+"ran `./init.sh` rather than believing eleven `pass` entries"; everything it
+inherited was genuinely fine, and it spent the time correcting a doc that
+disagreed with the code instead. The rule buys you the check when the gate would
+not have been run at all.
 
 ---
 
@@ -595,6 +818,10 @@ checklist line once got an agent to run a test the gate could not — genuinely
 useful, and entirely dependent on it choosing to read the file. **If a check
 matters, move it into the gate.**
 
+Which leaves the checklist holding what the gate *cannot* run — the eye check,
+the judgement call, the thing that needs a person. **If a box duplicates a gate
+step, delete the box, not the step.**
+
 ---
 
 ## Step 6 — The map
@@ -619,6 +846,22 @@ contract. The same rule applies to the harness: do not keep two copies of
 location that the code had not used for some time. Check the docs against the
 code as part of Step 1.
 
+### On an existing codebase, ratchet instead of failing
+
+A trial on a legacy tree wrote three correct rules and got **800 violations in
+60ms.** A gate that is red on day one is a gate someone deletes on day two.
+
+Record today's count as the baseline and **fail only on an increase**:
+
+```bash
+[ "$VIOLATIONS" -le "$(cat .boundary-baseline)" ] || {
+  echo "BOUNDARY: $VIOLATIONS violations, baseline $(cat .boundary-baseline)"; exit 1; }
+```
+
+The number only ever goes down. Also note: a language that autoloads by
+convention — Rails, Django — has no import lines to grep. Grep for the call
+instead (`\.where\(`, `redirect_to`), and accept it is coarser.
+
 ### Enforce the boundaries, do not just describe them
 
 `ARCHITECTURE.md` explains the layers. **A script decides them.** Put the script
@@ -634,7 +877,15 @@ bug is untraceable.
 The whole check is a text search over the import lines, one rule per line:
 
 ```bash
-banned <layer-dir> <regex> <why>       # 10 lines of machinery, written once
+banned() {                              # the ten lines, written once
+  local dir="$1" re="$2" why="$3"
+  local hits; hits=$(grep -rInE "$re" "$dir" 2>/dev/null || true)
+  [ -z "$hits" ] && return 0
+  echo "BOUNDARY: $why"; echo "$hits"; VIOLATIONS=$((VIOLATIONS+1))
+}
+# ...and at the end of the script: [ "$VIOLATIONS" -eq 0 ] || exit 1
+
+banned <layer-dir> <regex> <why>
 
 banned src/renderer  "['\"](fs|path|os|child_process)['\"]"  "the window must not touch the disk"
 banned src/services  "electron|ipcMain|BrowserWindow"        "logic must not know it is in Electron"
@@ -683,6 +934,11 @@ fix the harness; the harness fixes the app.
 revert the fix, and confirm your gate goes red. That turns the gate into a real
 regression test rather than a hypothetical one.
 
+**Then keep both trees.** The broken one and the working one, saved as fixtures
+with a two-line script that runs the gate against each and prints both exit
+codes. It costs seconds now, it is a permanent regression test, and it is the
+only way to run the removal test in *Keep it small* later.
+
 ### Report to the human like this
 
 Do not say "the gate works". Show three results:
@@ -694,6 +950,93 @@ broken at RUNTIME but compiling cleanly -> non-zero   ← the one that matters
 ```
 
 The third line is the whole point. The first two are easy.
+
+---
+
+## Step 8 — Ending a session clean
+
+Steps 0–7 happen once. This one happens every time, and it is the step that
+decides whether session two starts working or starts diagnosing.
+
+**Session complete = the task passes verification AND the clean-state check
+passes.** Missing either one means the session is not done.
+
+### The five conditions
+
+Not four, and not "the code compiles". All five, every session:
+
+| # | Condition | How you know |
+|---|---|---|
+| 1 | **Build passes** | `./init.sh` exits 0. Run it, do not predict it |
+| 2 | **Tests pass** — including tests that existed before this session | the command, and its output |
+| 3 | **Progress recorded** in machine-readable form | `feature_list.json` updated, per-feature log appended |
+| 4 | **No stale artifacts** — debug logs, temp files, commented-out code, TODO markers | a grep you can name |
+| 5 | **Standard startup path works** with no manual intervention | `./init.sh` from a clean clone |
+
+Write the block into `AGENTS.md` so it is the agent's exit condition, not yours:
+
+```markdown
+## Session Exit Checklist
+- [ ] ./init.sh exits 0          <- covers build, tests and the startup path
+- [ ] feature_list.json updated
+- [ ] No debug code remaining (grep: console.log, debugger, TODO)
+- [ ] <the eye check the gate cannot run>
+```
+
+**Box one collapses the first three conditions**, because a box that re-runs a
+gate step is the duplication Step 5 tells you to delete. This block and
+`clean-state-checklist.md` are the same artifact: keep the file, and let this
+block in `AGENTS.md` be the pointer to it. Do not maintain two.
+
+**Every box names a command.** Two escape hatches are deliberate. No test suite:
+write `none, because ___` — four projects here recorded zero test files, every
+time, because nothing asked. A suite that has been **red for months**: name the
+count you inherited and fail on an increase, the same ratchet as Step 6. A box
+that is never true teaches people to tick without reading.
+
+### Keep the checklist short, on purpose
+
+The course's own capstone ships a 41-box version. It stops being walked. In P03 a
+checklist with 14 boxes had one ticked slightly untruthfully — and that was at
+14.
+
+**If a box duplicates a gate step, delete the box, not the step.** The checklist
+holds what the gate cannot run.
+
+### Cleanup must be idempotent
+
+Running it twice must not be worse than running it once. Anything else and the
+retry path damages the tree:
+
+```sh
+rm -f ./tmp/debug-*.log        # -f: no error when there is nothing to remove
+git checkout -- .env.local     # restore to a known state, not "the last one"
+./init.sh                      # and confirm cleanup did not break anything
+```
+
+Better than teardown: point the run at a fresh temp directory and delete nothing.
+A teardown at the bottom of a `set -e` script does not run when the script exits
+above it.
+
+### The quality document — optional, and here is the catch
+
+A per-module grade, updated per session, so the next session can find the weakest
+part without reading everything:
+
+```markdown
+## <module> (Quality: C)
+- Verification passing: partial — <what is untested>
+- Agent understandable: difficult — <why>
+- Test stability: unstable — <which>
+- Architecture boundaries: violations present
+```
+
+**The catch, measured here:** a self-assigned grade does not track the code. In
+P05 an agent scored itself 4.6, found a real defect in its own work, fixed it,
+and scored itself 4.6 again. A quality document written by the same agent that
+did the work is a mood ring. Either score it the way Step 3b says, or write only
+the factual rows — what is untested, which tests are flaky, which boundaries are
+crossed — and leave the letter off.
 
 ---
 
@@ -716,6 +1059,34 @@ changes behaviour. It is insurance, priced at one second.
 Everything else earns its place by having caught something. If you cannot say
 what a step caught, it is a candidate for deletion — including these two.
 
+**A reviewer is the most expensive step in this playbook**, because it is a
+whole extra agent call per iteration. Add it only for the criteria a script
+genuinely cannot decide. If your rubric's rows could all be assertions, they
+should be assertions.
+
+### Finding out what a step caught: take it out
+
+The criterion above has no method attached. Here it is.
+
+You already own the fixtures — the broken tree and the working tree you kept at
+Step 7. Disable **one** step, do not delete it, run the same task against both
+trees, and compare. Two minutes, not a study.
+
+```
+same exit codes, and nothing an agent could have acted on has gone missing
+from the output          -> the step was decoration. Argue for deleting it.
+anything changes         -> put it back, and write down what changed. You now
+                            know what it catches, which you did not before.
+```
+
+Worked example, P04: a structured logger against no logger, same broken app —
+**58s to the fix without it, 52s with, three files read either way.** Null
+result, and Step 2b is still in this playbook. **A null is permission to argue
+for deletion, not an instruction to delete.**
+
+Write down what the run could not settle. P04's could not: n=1, and the bug was
+obvious enough that neither arm needed the logger.
+
 ---
 
 ## Keeping the harness alive
@@ -733,6 +1104,8 @@ now matters.
 | a log line reports a count and no magnitude | it cannot tell working from empty. Fix it before it costs you an afternoon |
 | a dependency major-version bump | P03's whole defect was a security default flipping in a minor Electron release. Nothing in the code changed |
 | the gate has never failed in weeks of real work | suspicious. Break something on purpose and confirm it still bites |
+| a model upgrade, or a step you cannot say what it caught | take it out and re-run the Step 7 trees. P02's own premise expired that way — a two-session exercise a current model finished in **6m54s** |
+| the gate is green and a human still sends the work back | the gate covers the checkable part and nothing covers the rest. That is Step 3b, and it is missing |
 | someone added a step that fails intermittently | fix it or remove it today. A flaky gate teaches people to ignore red, which is worse than having no gate |
 
 **The rule underneath:** a bug that escapes is not just a bug. It is a
@@ -771,6 +1144,30 @@ measurement gap, and the gap will let the next one through too.
    every claim happened to be true — and checking them is what found that out,
    and also found the one box ticked slightly untruthfully.
 
+9. **Self-review is accurate on the checkable and generous on the rest.**
+   Measured, not assumed: identical code, scored 4.75 by its author and 4.00
+   by a stranger, with the entire gap in the four criteria no script could
+   settle. "Agents flatter themselves" is too coarse — they flatter themselves
+   *precisely where there is no answer*.
+10. **A score is only comparable to a score from the same scorer.** Change the
+   scorer and you have measured the scorer. This is the easiest confound in
+   the book to introduce by accident and the hardest to see afterwards.
+11. **An instruction not to look is not a control.** If the reviewer must not
+   see something, do not tell it not to — do not put the file in the
+   directory.
+
+12. **A harness grows by default and shrinks only on purpose.** Every trigger in
+   "Keeping the harness alive" is a reason to add a step; only one is a reason
+   to remove one. P04 measured a step that added nothing — a structured logger
+   against no logger, 58s versus 52s, the same three files — and the step is
+   still in this playbook. **Recording a null result is not the same as acting
+   on one.**
+13. **A script nothing calls is not a gate.** In the course's own P06 solution,
+   `scripts/check-architecture.sh` is referenced nowhere — not by `init.sh`,
+   not by the checklist, not by `AGENTS.md`, not by `feature_list.json`.
+   Checked by grep. A boundary script that nothing invokes is a file, and files
+   do not fail builds.
+
 ---
 
 ## Mechanics — the things that waste an afternoon
@@ -798,6 +1195,14 @@ container is gone on exit.
 | Walls of `ERROR: bus.cc` / GPU messages in a container | harmless — no dbus, no GPU. Read the exit code, not the noise. |
 | A window flashes open and closes | that is the product check working as designed, not a crash |
 | Commands run in the wrong directory | a failed `cd` does not stop the next command. Use absolute paths in anything you hand over. |
+| Headless run produces **0 bytes** after 20 minutes | `xvfb-run` with no TTY hangs waiting on a terminal and `claude` never starts. Background `Xvfb` and `export DISPLAY=:99` instead. |
+| Two runs in parallel, both look fine | they mount the same path, so they share one conversation history — one run's purge can delete the other's in flight. Refuse to start while another run is live, and **watch it refuse.** |
+| A prompt string gets read as a filename | the running script was edited mid-run. Bash reads a script by byte offset; never edit one while it is executing. |
+| No `timeout` on macOS | use a `perl alarm` wrapper per step. |
+| A script reports failures and still exits 0 | it cannot gate anything. Count violations and `exit 1` at the end — then check `echo $?`. P06's `cleanup-scanner.sh` prints `Result: ISSUES FOUND (N)` and falls off the end of the script; exit 0 either way. Verified by reading it and running it. |
+| A counter reads zero after a loop that clearly incremented it | `cmd \| while read ...` runs the loop in a subshell and throws the variable away. Use `while read ...; done < <(cmd)`. |
+| `syntax error: invalid arithmetic operator` on a timing line | bash integer arithmetic on a float. `python3 -c "import time; print(time.time())"` returns `1788534974.114392`; make it `int(time.time()*1000)`. P06's `benchmark.sh` does exactly this at line 41. |
+| A teardown step at the bottom never runs | `set -e` exited above it. Put teardown in `trap ... EXIT`, or point the run at a fresh temp directory and delete nothing. |
 
 **Stopping a session part-way is hard.** Count file edits, not minutes. A clock
 gave "finished everything in 6m54s" and "zero files written" on consecutive
@@ -827,10 +1232,24 @@ tries; "stop after ~4 edits" worked.
 [ ] AGENTS.md defines done as "./init.sh exits 0" + evidence naming a command,
     and says one feature at a time.
 [ ] AGENTS.md has a Trust rule: a status is a claim, verify before acting.
+[ ] AGENTS.md names what must not be touched -- Q10's answer, written down.
+[ ] I kept BOTH trees from the break test, plus a script that runs the gate
+    against each and prints two exit codes.
+[ ] Every script I wrote is invoked by init.sh -- or I deleted it.
 [ ] feature_list.json has an empty evidence field for every feature.
 [ ] session-handoff.md template exists, with a field demanding a command's
-    output; a per-feature progress log exists; the checklist resets.
+    output; a per-feature progress log exists; the checklist resets and holds
+    only what the gate cannot run.
 [ ] docs/ARCHITECTURE.md and docs/PRODUCT.md exist and match the code.
+[ ] I named the parts of "good" no command can check -- or said out loud
+    that there are none.
+[ ] If there are: a blank rubric exists, every sub-top score demands a named
+    defect, and the reviewer runs in a context that did not write the code.
+[ ] The reviewer cannot see the author's self-assessment, because it is not in
+    the directory -- not because I told it not to look.
+[ ] AGENTS.md has a Session Exit Checklist -- the five conditions, each
+    naming a command, with an honest escape for the ones that do not apply.
+[ ] Cleanup is idempotent: I ran it twice and the second run changed nothing.
 [ ] I broke something on purpose and the harness caught it.
 [ ] I showed the human three exit codes: broken, working, and
     compiles-but-dead.
@@ -853,4 +1272,168 @@ Every claim here came from a measured run, not an opinion.
 | `project-01/NOTES.md` | a gate that only measures compiling proves only compiling |
 | `project-02/NOTES.md` | continuity measured: 26 files re-read vs 12 |
 | `project-03/NOTES.md` | a rendering app with nothing working; a state file wrong about 10 of 11 features; the gate upgraded and proved by regression |
-| `project-04/NOTES.md` | a log that reported 5 chunks holding 0 characters; a structured logger measured against no logger and found to add nothing, because the gate's own assertion output had already done its job |
+| `project-04/NOTES.md` | a log that reported 5 chunks holding 0 characters; a structured logger measured against no logger and found to add nothing — a null its own notes call unclean, because the bug was too obvious and the gate too informative |
+| `project-05/NOTES.md` | identical code scored 4.75 by its author and 4.00 by a stranger, the whole gap in the four criteria no script could settle; a self-score that did not move when the code changed; four arms scored blind at 4.0 / 4.4 / 4.5 / 4.1, where the course reports the three-role arm highest |
+
+**Every number here is n=1 or n=2** — the reason a rule exists, not a statistic.
+**Projects 06–08 have not been run**, and no claim above cites them.
+
+---
+
+## Loops — running it without you
+
+**UNEARNED.** No run in Projects 01–05 was a loop. Everything in this section and
+the next is structure, not measurement; the two measured facts below say so.
+
+A loop is the same agent, restarted on a trigger, with no human between runs. The
+work of getting there is almost entirely the work above.
+
+### The readiness test
+
+Not "do I have a scheduler". This:
+
+> If you had to write the loop's brief tonight, would every line be a copy-paste
+> out of files that already exist?
+
+| the loop needs | you already have it as |
+|---|---|
+| a machine-readable stop condition | `./init.sh` exits 0 |
+| what it must not touch | Q10's answer, in `AGENTS.md` |
+| an ordered verify sequence | the commands in your Definition of Done |
+| memory between runs | `session-handoff.md` + the per-feature log |
+| a quality bar for the checker | the Step 3b rubric |
+| an environment it can wake into unattended | `init.sh`, from a clean clone |
+
+**An empty row is where the loop fails at 3am with nobody reading the output.
+Fix the row, not the loop.** Note what the table says about the work: none of it
+is loop tooling. It is this playbook, finished.
+
+### `goal.md` — the brief, and it is a readout
+
+Seven sections, and each one already has a home:
+
+| Section | Contents | Comes from |
+|---|---|---|
+| `## Goal` | one sentence | the human |
+| `## Acceptance Criteria` | checkboxes, each checkable by a command | your gate |
+| `## Scope` | `### Fair game` and `### Hands off`, as paths | Q10 + `feature_list.json` |
+| `## Verification Method` | the commands, **in order**, "fix failures before the next step" | Definition of Done |
+| `## Stop Conditions` | all criteria pass · max turns · no progress for N rounds · blocked | you |
+| `## How to Work` | read `AGENTS.md` and `feature_list.json` first | the harness |
+| `## Output` | what to write back, and where | `session-handoff.md` |
+
+**Four stop conditions, not one.** "All criteria pass" is the happy path; the
+other three are what stops a loop that is going nowhere — *max turns reached*,
+*same error three rounds running*, *blocked and cannot resolve alone*.
+
+### Maker and checker
+
+Two prompts, never one agent playing both. This is Step 3b again, running every
+round instead of once.
+
+- **Maker** implements, self-verifies that it at least runs, and hands over a
+  fixed block: what changed · files touched · build/lint/test results · known
+  issues · **the parts it is unsure about**, for the checker to aim at.
+- **Checker** is told plainly: *you are here to find fault; not finding problems
+  is your failure.* Every issue carries four things — description, file and line,
+  evidence, severity. It ends on Pass / Fail / minor-and-acceptable, with the raw
+  command output attached.
+
+`loop-state.md` carries the memory between rounds: round number, what the maker
+did, what the checker found, pass/fail, whether a human stepped in and why. Read
+it at the start of a round, write it at the end.
+
+### The two rules that came from measurement here
+
+- **A stop condition is an exit code, never a duration.** Stopping a run at the
+  right moment took three attempts here *with* a human watching; only counting
+  file edits worked. A loop has nobody watching.
+- **Serialise first, isolate second.** Two runs went parallel on one mount and
+  one deleted the other's in-flight history sixty seconds in. Caught by
+  timestamps alone. The fix that shipped was refusing to start a second run — not
+  isolating it better.
+
+### Four costs that arrive quietly
+
+| Cost | What it looks like | The fix |
+|---|---|---|
+| Verification debt | "looks fine" replaces "confirmed" | stop conditions machine-checkable, always |
+| Comprehension rot | the loop ships faster than you read | fast loops need fast reading |
+| Cognitive surrender | you stop having opinions about the output | the loop cannot tell the difference. You can |
+| Token blowout | context grows roughly quadratically per turn | **a day-one concern, not a bolt-on** |
+
+The last one lands back on this playbook: keep `AGENTS.md` a short entrypoint
+that links out, keep state files summary-first, and put each fact in one place.
+A harness already near the context limit on a single manual run has no headroom
+to iterate.
+
+### The ladder
+
+1. **Goal runner** — one task, one stop condition, agent loops until met.
+2. **Scheduled single task** — one automation, one job, on a timer.
+3. **Maker/checker split** — two roles, isolated.
+4. **Self-feeding** — the loop picks its own next task from external state.
+5. **Fleet** — several loops, independent, sharing one memory layer.
+
+**Level 1 pays back fastest.** Do not install a scheduler before you have
+something worth running twice.
+
+---
+
+## Graphs — when one loop stops being enough
+
+**UNEARNED here too**, and the bar is higher than it sounds.
+
+A loop is a **deferred** decision: one agent absorbs everything, and when it gets
+stuck the failure mode is invisible — the agent does not know where it is stuck.
+A graph is an **up-front** decision: you declare who owns what and where each
+failure returns to, and you get readability, auditability and local repair.
+
+> A loop hides the problem inside the loop. A graph puts the problem on paper.
+
+### The four parts
+
+| Part | What it is |
+|---|---|
+| **Node** | a unit of work: deterministic code, a model call, a tool, or a whole agent. *What a node is allowed to be is the line between a graph and a workflow* |
+| **Edge** | a handoff — and it can be parallel, conditional, retry-into-itself, or a rollback several hops back |
+| **Shared state** | one workspace every node reads and writes. **Only state is shared; node context stays private** |
+| **Routing rules** | where execution goes next, in plain if-then, returning node names |
+
+`graph.md` is one file: a mermaid diagram, a node table, an edge table, the
+shared-state fields with who writes each, and a routing table of
+`current node | condition | next node`.
+
+### Do you actually need one
+
+Five criteria — **you need three**:
+
+1. the task splits into genuinely independent units
+2. **there are branch or rollback paths**
+3. intermediate state is worth checkpointing
+4. every node has an automatically checkable definition of done
+5. coordination benefit beats coordination cost
+
+**Scale is not the criterion — branches are.** A twenty-step line is a script,
+however long. Five nodes with a real rollback and an approval is a graph. Score
+below three and what you needed was a better script.
+
+### Two things not to skip
+
+- **Anchors.** Something outside the graph that says *the number moved but the
+  world did not* — real outcomes, ground truth, human spot-checks. A network of
+  loops with no anchor is a resonance of mutual drift.
+- **The orchestration tax.** Starting an agent is a keystroke; closing the loop
+  on one means someone reconciles what came back. There is one of you. More nodes
+  parallelise the part that was never the bottleneck.
+
+### You have already built one
+
+This playbook is a small graph and pays a graph's costs without the vocabulary.
+Its nodes: `init.sh` (deterministic), the Step 3b reviewer (an agent, in a
+context that did not write the code), the human at Step 0 and at Step 7's report.
+Its shared state is four files. Its routing table is *Keeping the harness alive*
+— trigger, then what to do.
+
+Which is the point of the last two sections. **The floors above are not new
+tooling. They are this playbook, finished, and then wired together.**

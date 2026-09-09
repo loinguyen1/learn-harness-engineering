@@ -1,0 +1,1121 @@
+<title>Eight Gates</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root{
+  --ground:#EAEEF1; --surface:#F8FAFB; --surface-2:#DFE6EB;
+  --ink:#14222D; --ink-2:#3D5567; --muted:#6B8497;
+  --rule:#C3D0D9; --rule-soft:#D6DFE5;
+  --accent:#1F5C8B; --accent-soft:#D9E7F2;
+  --pass:#1B6E4C; --fail:#9E2B2B; --warn:#8A6212;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#101922; --surface:#16222D; --surface-2:#1D2C39;
+    --ink:#E4ECF2; --ink-2:#B0C3D1; --muted:#7F97A8;
+    --rule:#2C3E4E; --rule-soft:#243441;
+    --accent:#6FAEDC; --accent-soft:#1B3348;
+    --pass:#54B487; --fail:#DE7B7B; --warn:#D2A64A;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#101922; --surface:#16222D; --surface-2:#1D2C39;
+  --ink:#E4ECF2; --ink-2:#B0C3D1; --muted:#7F97A8;
+  --rule:#2C3E4E; --rule-soft:#243441;
+  --accent:#6FAEDC; --accent-soft:#1B3348;
+  --pass:#54B487; --fail:#DE7B7B; --warn:#D2A64A;
+}
+
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);
+  font-size:16.5px;line-height:1.62;margin:0;-webkit-font-smoothing:antialiased}
+.page{max-width:1080px;margin:0 auto;padding:0 28px 96px}
+
+.masthead{padding:56px 0 40px;border-bottom:2px solid var(--ink)}
+.eyebrow{font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;
+  align-items:center;margin-bottom:20px}
+.eyebrow span:not(:last-child)::after{content:"";display:inline-block;width:1px;height:10px;
+  background:var(--rule);margin-left:14px;vertical-align:-1px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(38px,6.2vw,66px);line-height:1.02;
+  letter-spacing:-.028em;margin:0 0 20px;text-wrap:balance}
+.standfirst{font-size:20px;line-height:1.5;color:var(--ink-2);max-width:60ch;margin:0}
+.standfirst strong{color:var(--ink);font-weight:600}
+
+section{padding-top:54px}
+h2{font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--accent);margin:0 0 6px}
+h3{font-family:var(--display);font-weight:600;font-size:clamp(24px,3.2vw,31px);line-height:1.18;
+  letter-spacing:-.018em;margin:0 0 16px;text-wrap:balance}
+.lede{font-size:17.5px;color:var(--ink-2);max-width:66ch;margin:0 0 28px}
+p{max-width:66ch}
+mark{background:var(--accent-soft);color:var(--ink);padding:0 .22em;border-radius:2px}
+
+figure{margin:0;background:var(--surface);border:1px solid var(--rule);padding:26px 22px 18px}
+figure svg{display:block;width:100%;height:auto;color:var(--ink)}
+figcaption{font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--muted);
+  margin-top:18px;padding-top:14px;border-top:1px solid var(--rule-soft);max-width:none}
+figcaption b{color:var(--ink-2);font-weight:500}
+.scroller{overflow-x:auto}
+pre.mermaid{background:var(--surface);border:1px solid var(--rule);margin:0;padding:24px 18px;
+  overflow-x:auto;text-align:center}
+
+/* ---- element blocks ---- */
+.element{border:1px solid var(--rule);background:var(--surface);margin-bottom:28px}
+.el-head{padding:22px 24px 18px;border-bottom:1px solid var(--rule-soft);
+  display:grid;grid-template-columns:52px 1fr;gap:0 18px;align-items:baseline}
+.el-n{font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.08em;color:var(--accent);
+  grid-row:span 2}
+.el-head h4{font-family:var(--display);font-weight:600;font-size:23px;letter-spacing:-.015em;
+  margin:0 0 4px;line-height:1.2}
+.el-head p{margin:0;color:var(--ink-2);font-size:16px;max-width:62ch}
+.element figure{border:none;padding:22px 24px 6px;background:transparent}
+.element figcaption{padding-bottom:4px}
+.howto{margin:0;padding:18px 24px 20px;border-top:1px solid var(--rule-soft);background:var(--surface-2)}
+.howto b{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent);display:block;margin-bottom:8px}
+.howto p{margin:0;font-size:15.5px;color:var(--ink-2);max-width:70ch}
+.howto p + p{margin-top:8px}
+.element pre.mermaid{border:none;background:transparent;padding:18px 24px 0}
+pre.snip{font-family:var(--mono);font-size:12.5px;line-height:1.72;background:var(--surface-2);
+  border:1px solid var(--rule-soft);padding:16px 18px;overflow-x:auto;margin:0;color:var(--ink)}
+pre.snip .c{color:var(--muted)}
+pre.snip .k{color:var(--accent);font-weight:700}
+pre.snip .r{color:var(--fail);font-weight:700}
+
+.chain{display:grid;gap:0;border:1px solid var(--rule);background:var(--surface)}
+.link{display:grid;grid-template-columns:60px 1.05fr 1.15fr 190px;gap:22px;padding:18px 22px;
+  border-top:1px solid var(--rule-soft);align-items:start}
+.link:first-child{border-top:none}
+.link.unrun{background:var(--surface-2)}
+.num{font-family:var(--mono);font-weight:700;font-size:21px;color:var(--accent);letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;line-height:1.35}
+.link.unrun .num{color:var(--muted)}
+.exposed{color:var(--ink-2);font-size:15.5px;line-height:1.45}
+.exposed b{display:block;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.fix{font-family:var(--display);font-weight:600;font-size:16.5px;line-height:1.4;letter-spacing:-.008em}
+.artifact{font-family:var(--mono);font-size:12.5px;line-height:1.75;color:var(--ink-2);word-break:break-word}
+.tag{display:inline-block;font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;padding:2px 7px;border:1px solid currentColor;color:var(--warn);margin-top:8px}
+
+table{border-collapse:collapse;width:100%;font-size:15px;min-width:560px}
+caption{text-align:left;font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);padding-bottom:10px}
+th{font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--muted);text-align:left;padding:0 16px 9px 0;border-bottom:1px solid var(--rule)}
+td{padding:11px 16px 11px 0;border-bottom:1px solid var(--rule-soft);vertical-align:top;color:var(--ink-2)}
+td:first-child{color:var(--ink)}
+.num-cell{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;padding-right:0;color:var(--ink)}
+tr.best .num-cell{font-weight:700;color:var(--accent)}
+code{font-family:var(--mono);font-size:.88em;background:var(--surface-2);padding:.1em .35em;
+  border-radius:2px;color:var(--ink)}
+
+.steps{list-style:none;counter-reset:s;padding:0;margin:0;display:grid;gap:1px;background:var(--rule);
+  border:1px solid var(--rule)}
+.steps li{counter-increment:s;background:var(--surface);padding:16px 22px 16px 62px;position:relative;font-size:16px}
+.steps li::before{content:counter(s);position:absolute;left:22px;top:16px;font-family:var(--mono);
+  font-size:12px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;line-height:1.9}
+.steps b{font-family:var(--display);font-weight:600;letter-spacing:-.005em}
+.steps span{display:block;color:var(--muted);font-size:14.5px;line-height:1.5;margin-top:2px}
+
+.callout{border-left:3px solid var(--accent);background:var(--surface);padding:20px 24px;
+  margin:28px 0 0;font-size:17px}
+.callout p{margin:0;max-width:62ch}
+.callout p + p{margin-top:10px}
+.unearned{border-left-color:var(--warn)}
+.unearned .flag{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--warn);display:block;margin-bottom:6px}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.two > div{background:var(--surface);padding:22px 24px}
+.two h4{font-family:var(--display);font-weight:600;font-size:19px;margin:0 0 4px;letter-spacing:-.01em}
+.two .sub{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 14px}
+.two ul{margin:0;padding-left:18px;font-size:15.5px;color:var(--ink-2)}
+.two li{margin-bottom:7px}
+.two li b{color:var(--ink);font-weight:600}
+
+footer{margin-top:64px;padding-top:22px;border-top:2px solid var(--ink);font-family:var(--mono);
+  font-size:12px;color:var(--muted);line-height:1.8}
+
+@media (max-width:820px){
+  .link{grid-template-columns:44px 1fr;gap:6px 16px}
+  .link .fix,.link .artifact{grid-column:2}
+  .link .fix{margin-top:6px}
+  .two{grid-template-columns:1fr}
+  .page{padding:0 20px 72px}
+  .el-head{grid-template-columns:1fr}
+  .el-n{grid-row:auto;margin-bottom:6px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="page">
+
+<header class="masthead">
+  <div class="eyebrow"><span>Harness Engineering</span><span>Projects 01–08</span><span>measured, n=1</span></div>
+  <h1>Eight Gates</h1>
+  <p class="standfirst">A harness is what makes an agent's work trustworthy: <strong>a gate that cannot lie, a definition of done that names a command, and a record that survives a restart.</strong> Every element below exists because something got through without it.</p>
+</header>
+
+<section>
+  <h2>The mechanism</h2>
+  <h3>An agent cannot be the thing that decides it succeeded</h3>
+  <p class="lede">The gate runs independently and reports an exit code; the agent never grades itself on anything a command can settle. What no command can settle goes to a reviewer in a context that did not write the code.</p>
+
+  <figure>
+    <svg viewBox="0 0 900 400" role="img" aria-label="The harness loop: an agent writes code, a gate runs it, exit 0 means done, non-zero returns to the agent with the numbers it compared, and anything no command can check goes to a separate reviewer that returns named defects.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/></marker>
+        <marker id="arF" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--fail)"/></marker>
+        <marker id="arA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/></marker>
+        <marker id="arP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="var(--pass)"/></marker>
+      </defs>
+      <rect x="48" y="58" width="150" height="64" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <text x="123" y="86" text-anchor="middle" font-family="Archivo, sans-serif" font-size="14" font-weight="600" fill="currentColor">AGENT</text>
+      <text x="123" y="105" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">reads AGENTS.md</text>
+      <rect x="258" y="58" width="132" height="64" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <text x="324" y="86" text-anchor="middle" font-family="Archivo, sans-serif" font-size="14" font-weight="600" fill="currentColor">CODE</text>
+      <text x="324" y="105" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">a claim</text>
+      <rect x="450" y="46" width="180" height="88" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5"/>
+      <text x="540" y="79" text-anchor="middle" font-family="Archivo, sans-serif" font-size="15" font-weight="700" fill="currentColor">THE GATE</text>
+      <text x="540" y="97" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--ink-2)">./init.sh</text>
+      <text x="540" y="114" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--ink-2)">one real user path</text>
+      <rect x="700" y="58" width="152" height="64" fill="none" stroke="var(--pass)" stroke-width="1.5"/>
+      <text x="776" y="86" text-anchor="middle" font-family="Archivo, sans-serif" font-size="14" font-weight="600" fill="var(--pass)">DONE</text>
+      <text x="776" y="105" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">+ evidence</text>
+      <rect x="430" y="238" width="220" height="72" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5 4"/>
+      <text x="540" y="266" text-anchor="middle" font-family="Archivo, sans-serif" font-size="14" font-weight="600" fill="currentColor">REVIEWER</text>
+      <text x="540" y="285" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">a context that did not</text>
+      <text x="540" y="299" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">write the code</text>
+      <line x1="198" y1="90" x2="252" y2="90" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+      <text x="225" y="80" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">writes</text>
+      <line x1="390" y1="90" x2="444" y2="90" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+      <text x="417" y="80" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">runs</text>
+      <line x1="630" y1="90" x2="694" y2="90" stroke="var(--pass)" stroke-width="2" marker-end="url(#arP)"/>
+      <text x="662" y="80" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" fill="var(--pass)">exit 0</text>
+      <path d="M 540 46 L 540 24 L 123 24 L 123 52" fill="none" stroke="var(--fail)" stroke-width="2" marker-end="url(#arF)"/>
+      <text x="332" y="16" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="var(--fail)">non-zero — and the numbers it compared</text>
+      <path d="M 540 134 L 540 232" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arA)"/>
+      <text x="552" y="188" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--accent)">the part no command can check</text>
+      <path d="M 430 274 L 123 274 L 123 128" fill="none" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arA)"/>
+      <text x="278" y="264" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--accent)">named defects, scored</text>
+      <line x1="48" y1="352" x2="852" y2="352" stroke="var(--rule)" stroke-width="1"/>
+      <text x="48" y="376" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">A gate you have not watched fail is not a gate.</text>
+      <text x="852" y="376" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">Evidence must name a command.</text>
+    </svg>
+    <figcaption><b>The two returns are different jobs.</b> The red path is the gate refusing a claim, and it must carry the numbers it compared — not "test failed". The blue path is the reviewer, and it exists only for criteria no assertion can reach.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Why the gate has to reach the app</h2>
+  <h3>Passing the outer ring proves nothing about the inner one</h3>
+  <figure>
+    <svg viewBox="0 0 720 400" role="img" aria-label="Three nested sets: programs that type-check contain programs that compile, which contain programs that actually work. Project 03's app sat inside compiles but outside works — two green checks and a dead application.">
+      <rect x="30" y="46" width="660" height="300" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".55"/>
+      <text x="46" y="70" font-family="JetBrains Mono, monospace" font-size="11.5" font-weight="500" fill="var(--muted)">IT TYPE-CHECKS · npm run check</text>
+      <rect x="86" y="94" width="548" height="214" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".8"/>
+      <text x="102" y="118" font-family="JetBrains Mono, monospace" font-size="11.5" font-weight="500" fill="var(--ink-2)">IT COMPILES · npm run build</text>
+      <rect x="164" y="146" width="392" height="118" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5"/>
+      <text x="360" y="180" text-anchor="middle" font-family="Archivo, sans-serif" font-size="16" font-weight="700" fill="currentColor">IT WORKS</text>
+      <text x="360" y="203" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--ink-2)">SMOKE=1 · one real user path</text>
+      <text x="360" y="223" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--ink-2)">ROUNDTRIP: {"chunks":5,"citations":2}</text>
+      <text x="360" y="245" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--accent)">the only ring worth asserting on</text>
+      <circle cx="600" cy="272" r="6" fill="var(--fail)"/>
+      <line x1="600" y1="272" x2="600" y2="330" stroke="var(--fail)" stroke-width="1.5"/>
+      <text x="600" y="348" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="var(--fail)">P03: exit 0, exit 0 — and a window that did nothing</text>
+      <text x="30" y="382" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">Compiling proves compiling. Rendering proves rendering. Only using it proves it works.</text>
+    </svg>
+    <figcaption><b>Three projects in a row shipped a dead app behind two green checks.</b> The fix is not more checks of the same kind — it is one check that goes from the outside edge to the data and back, and asserts on what came back.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>The sequence</h2>
+  <h3>Each project fixes what the last one let through</h3>
+  <p class="lede">The order is not a curriculum — it is a chain of failures. Read the middle column as the thing that went wrong, and the third as what had to be added because of it.</p>
+  <div class="chain">
+    <div class="link"><div class="num">01</div>
+      <div class="exposed"><b>What it exposed</b>The agent declares done with no proof, and nobody finds out otherwise.</div>
+      <div class="fix">Demand evidence. Write the gate first and watch it fail before trusting it.</div>
+      <div class="artifact">init.sh<br>BASELINE.md</div></div>
+    <div class="link"><div class="num">02</div>
+      <div class="exposed"><b>What it exposed</b>Everything the agent knew died at the session boundary. 26 files re-read, against 12 with a handoff.</div>
+      <div class="fix">Demand a handoff. Memory lives on disk, not in a context window.</div>
+      <div class="artifact">session-handoff.md<br>claude-progress.md</div></div>
+    <div class="link"><div class="num">03</div>
+      <div class="exposed"><b>What it exposed</b>The gate only measured compiling. A state file was wrong about 10 of 11 features while the app was dead.</div>
+      <div class="fix">Make the gate <em>use</em> the app, and treat every recorded status as a claim to verify.</div>
+      <div class="artifact">the product check<br>a Trust rule</div></div>
+    <div class="link"><div class="num">04</div>
+      <div class="exposed"><b>What it exposed</b>The gate said broken and nothing said where. A log reported 5 chunks holding 0 characters.</div>
+      <div class="fix">Report a size, not a count — and make the assertion print the numbers it compared.</div>
+      <div class="artifact">runtime signal<br>actionable errors</div></div>
+    <div class="link"><div class="num">05</div>
+      <div class="exposed"><b>What it exposed</b>The quality bar cannot be written as an assertion. Identical code scored 4.75 by its author, 4.00 by a stranger.</div>
+      <div class="fix">Who holds the pen decides the score. Separate the reviewer where a script cannot decide.</div>
+      <div class="artifact">evaluator-rubric.md<br>sprint-contract.md</div></div>
+    <div class="link unrun"><div class="num">06</div>
+      <div class="exposed"><b>What it exposed</b>Sessions end dirty, and a harness grows forever because every rule adds and none removes.</div>
+      <div class="fix">Five exit conditions, each a command. Then take a step out and measure whether anything got worse.<span class="tag">not run here</span></div>
+      <div class="artifact">Session Exit Checklist<br>the removal test</div></div>
+    <div class="link unrun"><div class="num">07</div>
+      <div class="exposed"><b>What it exposed</b>You are still the one pressing enter. Nothing runs unless a human starts it.</div>
+      <div class="fix">Write the goal, the verification and the stop condition down, then step outside the loop.<span class="tag">not run here</span></div>
+      <div class="artifact">goal.md<br>loop-state.md</div></div>
+    <div class="link unrun"><div class="num">08</div>
+      <div class="exposed"><b>What it exposed</b>Every routing decision lived inside one agent's head, so failures had nowhere to go back to.</div>
+      <div class="fix">Put nodes, edges, shared state and routing on paper — but only when there are real branches.<span class="tag">not run here</span></div>
+      <div class="artifact">graph.md</div></div>
+  </div>
+</section>
+
+<!-- ============ ELEMENTS ============ -->
+<section>
+  <h2>The elements</h2>
+  <h3>Nine parts, what each one catches, and what to write</h3>
+  <p class="lede">This is the part you copy onto a new project. Each element below is drawn as the mechanism it actually is, followed by the smallest version worth writing on day one.</p>
+
+  <!-- E1 -->
+  <div class="element">
+    <div class="el-head"><span class="el-n">E1</span>
+      <h4>The file map</h4>
+      <p>Which files an agent reads before it starts, which it must write before it walks away, and the loop that turns one into the other.</p>
+    </div>
+    <figure>
+      <svg viewBox="0 0 900 480" role="img" aria-label="Harness file map: four files are read at session start, the agent runs the gate which returns an exit code, four files are written before the session ends, and next session those written files become the read files.">
+        <text x="60" y="72" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" letter-spacing="1.4" fill="var(--muted)">READ FIRST, EVERY SESSION</text>
+        <text x="650" y="72" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" letter-spacing="1.4" fill="var(--muted)">WRITTEN BEFORE YOU WALK AWAY</text>
+        <g font-family="JetBrains Mono, monospace" font-size="11.5" fill="currentColor">
+          <rect x="60" y="96" width="210" height="44" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+          <text x="74" y="116">AGENTS.md</text><text x="74" y="131" font-size="10" fill="var(--muted)">the entrypoint — keep it short</text>
+          <rect x="60" y="150" width="210" height="44" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="74" y="170">docs/ARCHITECTURE.md</text><text x="74" y="185" font-size="10" fill="var(--muted)">the layers, and what may not talk</text>
+          <rect x="60" y="204" width="210" height="44" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="74" y="224">docs/PRODUCT.md</text><text x="74" y="239" font-size="10" fill="var(--muted)">what a user does with it</text>
+          <rect x="60" y="258" width="210" height="44" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="74" y="278">BASELINE.md</text><text x="74" y="293" font-size="10" fill="var(--muted)">what was already broken</text>
+        </g>
+        <rect x="360" y="156" width="190" height="104" fill="none" stroke="currentColor" stroke-width="2"/>
+        <text x="455" y="196" text-anchor="middle" font-family="Archivo, sans-serif" font-size="15" font-weight="700" fill="currentColor">AGENT</text>
+        <text x="455" y="217" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">one session,</text>
+        <text x="455" y="232" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">one context window</text>
+        <g stroke="currentColor" stroke-width="1.2" fill="none" opacity=".75">
+          <line x1="270" y1="118" x2="354" y2="192" marker-end="url(#ar)"/>
+          <line x1="270" y1="172" x2="354" y2="200" marker-end="url(#ar)"/>
+          <line x1="270" y1="226" x2="354" y2="214" marker-end="url(#ar)"/>
+          <line x1="270" y1="280" x2="354" y2="224" marker-end="url(#ar)"/>
+        </g>
+        <text x="312" y="146" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">reads</text>
+        <g font-family="JetBrains Mono, monospace" font-size="11.5" fill="currentColor">
+          <rect x="650" y="96" width="210" height="44" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="664" y="116">feature_list.json</text><text x="664" y="131" font-size="10" fill="var(--muted)">status + evidence naming a command</text>
+          <rect x="650" y="150" width="210" height="44" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="664" y="170">session-handoff.md</text><text x="664" y="185" font-size="10" fill="var(--muted)">where I stopped, what is broken</text>
+          <rect x="650" y="204" width="210" height="44" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="664" y="224">claude-progress.md</text><text x="664" y="239" font-size="10" fill="var(--muted)">appended per feature, not per session</text>
+          <rect x="650" y="258" width="210" height="44" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="664" y="278">clean-state-checklist.md</text><text x="664" y="293" font-size="10" fill="var(--muted)">what the gate cannot run</text>
+        </g>
+        <g stroke="currentColor" stroke-width="1.2" fill="none" opacity=".75">
+          <line x1="550" y1="192" x2="644" y2="118" marker-end="url(#ar)"/>
+          <line x1="550" y1="200" x2="644" y2="172" marker-end="url(#ar)"/>
+          <line x1="550" y1="214" x2="644" y2="226" marker-end="url(#ar)"/>
+          <line x1="550" y1="224" x2="644" y2="280" marker-end="url(#ar)"/>
+        </g>
+        <text x="600" y="146" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">writes</text>
+        <rect x="350" y="336" width="210" height="68" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5"/>
+        <text x="455" y="364" text-anchor="middle" font-family="Archivo, sans-serif" font-size="14" font-weight="700" fill="currentColor">THE GATE</text>
+        <text x="455" y="384" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--ink-2)">./init.sh</text>
+        <line x1="410" y1="262" x2="410" y2="330" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+        <text x="400" y="300" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">runs</text>
+        <line x1="500" y1="330" x2="500" y2="264" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arA)"/>
+        <text x="512" y="300" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--accent)">exit code</text>
+        <path d="M 755 306 L 755 448 L 30 448 L 30 118 L 54 118" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 5" opacity=".7" marker-end="url(#ar)"/>
+        <text x="392" y="440" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">next session, what this one wrote is what gets read — the agent forgets, the repo does not</text>
+      </svg>
+      <figcaption><b>The dashed line is the whole point of a harness.</b> Nothing survives a context window; everything survives a file. If a fact matters to the next session, it has to be on the right-hand side before this one ends.</figcaption>
+    </figure>
+    <div class="howto"><b>Smallest version</b>
+      <p>Four files at the repo root, committed, existing exactly once: <code>AGENTS.md</code>, <code>init.sh</code>, <code>feature_list.json</code>, <code>session-handoff.md</code>. Add <code>BASELINE.md</code> before you write a line of code.</p>
+      <p>Audit what else is already sitting in the folder. In P01 three sample files in a data directory were read as a design spec — reasonably, because nothing said otherwise. <strong>Whatever is in the folder is the brief.</strong></p>
+    </div>
+  </div>
+
+  <!-- E2 -->
+  <div class="element">
+    <div class="el-head"><span class="el-n">E2</span>
+      <h4><code>init.sh</code> — the gate</h4>
+      <p>A ladder of checks, cheapest first, each one able to stop the run. The rung that matters is the last one, and it is the one most harnesses never write.</p>
+    </div>
+    <figure>
+      <svg viewBox="0 0 860 500" role="img" aria-label="init.sh as a ladder of six checks: dependencies, type check, architecture boundaries, build, the product check, and a checklist staleness warning. Each rung can exit 1 for a different reason; the product check is highlighted as the one that catches an app that compiles but is dead.">
+        <g font-family="JetBrains Mono, monospace" font-size="12.5">
+          <rect x="60" y="56" width="290" height="42" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="76" y="82" fill="currentColor">1 · install dependencies</text>
+          <rect x="60" y="118" width="290" height="42" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="76" y="144" fill="currentColor">2 · type check</text>
+          <rect x="60" y="180" width="290" height="42" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="76" y="206" fill="currentColor">3 · architecture boundaries</text>
+          <rect x="60" y="242" width="290" height="42" fill="none" stroke="currentColor" stroke-width="1.2"/>
+          <text x="76" y="268" fill="currentColor">4 · build</text>
+          <rect x="60" y="304" width="290" height="56" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5"/>
+          <text x="76" y="328" fill="currentColor" font-weight="700">5 · THE PRODUCT CHECK</text>
+          <text x="76" y="348" fill="var(--ink-2)" font-size="11">one real user path, end to end</text>
+          <rect x="60" y="380" width="290" height="42" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 4"/>
+          <text x="76" y="406" fill="var(--muted)">6 · checklist staleness</text>
+        </g>
+        <g stroke="currentColor" stroke-width="1.5" fill="none">
+          <line x1="205" y1="98" x2="205" y2="112" marker-end="url(#ar)"/>
+          <line x1="205" y1="160" x2="205" y2="174" marker-end="url(#ar)"/>
+          <line x1="205" y1="222" x2="205" y2="236" marker-end="url(#ar)"/>
+          <line x1="205" y1="284" x2="205" y2="298" marker-end="url(#ar)"/>
+          <line x1="205" y1="360" x2="205" y2="374" marker-end="url(#ar)"/>
+        </g>
+        <line x1="205" y1="422" x2="205" y2="448" stroke="var(--pass)" stroke-width="2" marker-end="url(#arP)"/>
+        <text x="205" y="472" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="13" font-weight="700" fill="var(--pass)">exit 0</text>
+        <g font-family="JetBrains Mono, monospace" font-size="11.5" fill="var(--fail)">
+          <line x1="350" y1="77" x2="408" y2="77" stroke="var(--fail)" stroke-width="1.4" marker-end="url(#arF)"/><text x="418" y="81">the environment is wrong, not the code</text>
+          <line x1="350" y1="139" x2="408" y2="139" stroke="var(--fail)" stroke-width="1.4" marker-end="url(#arF)"/><text x="418" y="143">it does not type-check</text>
+          <line x1="350" y1="201" x2="408" y2="201" stroke="var(--fail)" stroke-width="1.4" marker-end="url(#arF)"/><text x="418" y="205">a layer reached past its boundary</text>
+          <line x1="350" y1="263" x2="408" y2="263" stroke="var(--fail)" stroke-width="1.4" marker-end="url(#arF)"/><text x="418" y="267">it does not compile</text>
+          <line x1="350" y1="332" x2="408" y2="332" stroke="var(--fail)" stroke-width="2.2" marker-end="url(#arF)"/>
+          <text x="418" y="329" font-weight="700">it compiles cleanly — and it is dead</text>
+          <text x="418" y="346" fill="var(--muted)" font-weight="400">the only failure the other five cannot see</text>
+        </g>
+        <line x1="350" y1="401" x2="408" y2="401" stroke="var(--muted)" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#ar)"/>
+        <text x="418" y="405" font-family="JetBrains Mono, monospace" font-size="11.5" fill="var(--muted)">warn only — a check that fires constantly gets disabled</text>
+        <text x="60" y="30" font-family="JetBrains Mono, monospace" font-size="11.5" fill="var(--muted)">set -euo pipefail &#160;·&#160; cheapest check first &#160;·&#160; the product check is the LAST line on purpose</text>
+      </svg>
+      <figcaption><b>Order is a cost decision, not a taste one.</b> Cheap checks first so a typo fails in two seconds. But the run is only meaningful if it reaches rung 5, so nothing after it may be allowed to pass on its behalf.</figcaption>
+    </figure>
+    <div class="howto"><b>Smallest version</b>
+      <p>Start with rung 5 and nothing else. One command that drives a real user action, prints what came back, and compares it.</p>
+      <pre class="snip"><span class="c"># the assertion must print the numbers it compared</span>
+OUT=$(SMOKE=1 node ./scripts/smoke.js)
+echo "$OUT"                    <span class="c"># -&gt; ROUNDTRIP: {"chunks":5,"citations":2}</span>
+<span class="k">if</span> [ "$(echo "$OUT" | jq '.citations')" -lt 1 ]; <span class="k">then</span>
+  echo "<span class="r">FAIL</span>: citations=0, expected &gt;=1. qa-service.ts caps excerpts at 200 chars."
+  <span class="k">exit</span> 1
+<span class="k">fi</span></pre>
+      <p style="margin-top:12px"><strong>Then watch it fail.</strong> Break the thing on purpose, run it, and read <em>which rung</em> produced the red. A gate you have not seen fail is not a gate — and "it failed" is not "it found the bug".</p>
+    </div>
+  </div>
+
+  <!-- E3 -->
+  <div class="element">
+    <div class="el-head"><span class="el-n">E3</span>
+      <h4><code>AGENTS.md</code> — the contract</h4>
+      <p>Three blocks, and nothing else at the top level. Everything longer lives in a linked doc, because context spent on the entrypoint is context not spent on the work.</p>
+    </div>
+    <figure style="padding-bottom:22px">
+      <pre class="snip"><span class="c">## Startup workflow</span>
+1. Read docs/ARCHITECTURE.md and docs/PRODUCT.md.
+2. Read feature_list.json. <span class="c">Treat every status as a claim.</span>
+3. Read session-handoff.md.
+4. Run ./init.sh. <span class="c">Do not predict its result.</span>
+
+<span class="c">## Definition of Done</span>
+A feature is NOT done because you believe it is. It is done when:
+1. <span class="k">./init.sh exits 0</span>. Run it.
+2. Its feature_list.json entry has status "pass" and an evidence field
+   naming <span class="k">the command you ran and what it printed</span>.
+3. Evidence describing code you READ, rather than a command you RAN,
+   <span class="r">does not count</span>.
+Finish one feature completely before starting the next.
+
+<span class="c">## Trust</span>
+feature_list.json is a claim, not a fact.
+- Marked `not-started`? Check whether it already works before rebuilding it.
+- Marked `pass`? Run ./init.sh. If the command disagrees, the file is wrong.
+- Found a stale claim? Correct it <span class="k">AND say it was stale</span>. Never silently overwrite.
+
+<span class="c">## Hands off</span>
+src/generated/**, migrations/**, .github/workflows/**, package.json versions</pre>
+      <figcaption><b>Point 3 of the Definition of Done is the one people leave out.</b> Without it you get evidence like "BrowserWindow is constructed with the correct options" — code inspection dressed up as proof. In P01 that exact sentence accompanied a black window.</figcaption>
+    </figure>
+    <div class="howto"><b>Why the Hands-off list is not optional</b>
+      <p>Most harnesses write down what the agent may do and never what it must not touch. On manual runs a human catches the overreach, so the gap stays invisible until nobody is watching. <strong>No written constraint, no constraint.</strong></p>
+    </div>
+  </div>
+
+  <!-- E4 -->
+  <div class="element">
+    <div class="el-head"><span class="el-n">E4</span>
+      <h4>Evidence, and the Trust loop</h4>
+      <p>A status field is a claim somebody typed. In P03 a checked-in list was wrong in both directions at once — features marked done that were dead, and features marked missing that already worked.</p>
+    </div>
+    <pre class="mermaid">
+flowchart LR
+  A["feature_list.json entry"] --> B{"what does it claim?"}
+  B -->|"status: pass"| C["run ./init.sh"]
+  C -->|"command agrees"| D["believe it"]
+  C -->|"command disagrees"| E["the FILE is wrong"]
+  E --> F["correct it AND record
+that it was stale"]
+  B -->|"status: not-started"| G{"does it already work?"}
+  G -->|"yes"| H["say so.
+do NOT rewrite working code"]
+  G -->|"no"| I["build it,
+then fill the evidence field"]
+    </pre>
+    <div class="howto"><b>Smallest version</b>
+      <pre class="snip">{ "id": "document-import", "status": "not-started",
+  "evidence": <span class="r">null</span>, "testedAt": <span class="r">null</span> }</pre>
+      <p style="margin-top:12px">An empty field with a specific question is much harder to fill with nothing than a paragraph is. Given the Trust rule, one agent ran the gate against eleven <code>pass</code> entries, found the app dead, fixed it, and <em>annotated</em> the false claims rather than quietly overwriting them.</p>
+    </div>
+  </div>
+
+  <!-- E5 -->
+  <div class="element">
+    <div class="el-head"><span class="el-n">E5</span>
+      <h4>Continuity across the boundary</h4>
+      <p>The context window ends. Everything the agent worked out is gone unless a file caught it — and the next session must not simply believe what it finds.</p>
+    </div>
+    <figure>
+      <svg viewBox="0 0 900 360" role="img" aria-label="Session one does work then closes, writing three files to disk. The context dies at the boundary. Session two reads those files first, verifies the claims it inherited, then works. Without a handoff 26 files were re-read; with one, 12.">
+        <rect x="40" y="56" width="300" height="118" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="58" y="82" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" letter-spacing="1.2" fill="var(--muted)">SESSION 1</text>
+        <text x="58" y="108" font-family="Archivo, sans-serif" font-size="14" font-weight="600" fill="currentColor">do the work</text>
+        <rect x="58" y="122" width="264" height="34" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="70" y="144" font-family="JetBrains Mono, monospace" font-size="11.5" fill="currentColor">CLOSE · five conditions, each a command</text>
+        <path d="M 452 40 L 440 76 L 452 112 L 440 148 L 452 184 L 440 220" fill="none" stroke="var(--fail)" stroke-width="2"/>
+        <text x="446" y="256" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" fill="var(--fail)">context dies</text>
+        <text x="446" y="272" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">nothing here survives</text>
+        <rect x="560" y="56" width="300" height="118" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="578" y="82" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" letter-spacing="1.2" fill="var(--muted)">SESSION 2</text>
+        <rect x="578" y="92" width="264" height="34" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="590" y="114" font-family="JetBrains Mono, monospace" font-size="11.5" fill="currentColor">VERIFY what it inherited</text>
+        <text x="578" y="150" font-family="Archivo, sans-serif" font-size="14" font-weight="600" fill="currentColor">then do the work</text>
+        <rect x="40" y="238" width="820" height="66" fill="none" stroke="currentColor" stroke-width="2"/>
+        <text x="58" y="264" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" letter-spacing="1.2" fill="var(--muted)">ON DISK — the only thing that crosses</text>
+        <text x="58" y="288" font-family="JetBrains Mono, monospace" font-size="12" fill="currentColor">session-handoff.md &#160;·&#160; claude-progress.md &#160;·&#160; feature_list.json</text>
+        <line x1="190" y1="174" x2="190" y2="232" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+        <text x="200" y="208" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">writes</text>
+        <line x1="710" y1="232" x2="710" y2="174" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+        <text x="720" y="208" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">reads, first thing</text>
+        <text x="40" y="336" font-family="JetBrains Mono, monospace" font-size="11.5" fill="var(--accent)">measured: 26 files re-read without a handoff · 12 with one</text>
+      </svg>
+      <figcaption><b>The verify box is not politeness.</b> A handoff is a claim like any other — P03's inherited state file was wrong about ten of eleven features. Read it first, then check it against a command before acting on it.</figcaption>
+    </figure>
+    <div class="howto"><b>Smallest version — the one un-fakeable field</b>
+      <pre class="snip"><span class="c">## Last ./init.sh result</span>   <span class="c">&lt;- paste the real output, not a summary</span>
+<span class="c">## Did I verify what I inherited, or trust it?</span>
+<span class="c">## What's half-done</span>          <span class="c">&lt;- exactly where I stopped</span>
+<span class="c">## Decisions I made</span>          <span class="c">&lt;- so the next session does not re-argue them</span>
+<span class="c">## Anything the repo was WRONG about</span>
+<span class="c">## Next step</span>                 <span class="c">&lt;- the single next thing</span></pre>
+      <p style="margin-top:12px">One field must demand a command's output. That is the field that cannot be filled from memory, and it is why the form works.</p>
+    </div>
+  </div>
+
+  <!-- E6 -->
+  <div class="element">
+    <div class="el-head"><span class="el-n">E6</span>
+      <h4>Observability — a size, not a count</h4>
+      <p>The gate tells you something is broken. Logs are what tell you <em>where</em>. A count says the loop ran; only a magnitude says it did anything.</p>
+    </div>
+    <figure>
+      <svg viewBox="0 0 900 320" role="img" aria-label="The same broken indexing run, logged two ways. Logging a count of five chunks leaves the agent searching. Logging five chunks holding zero characters points straight at the truncation bug.">
+        <rect x="300" y="30" width="300" height="46" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="450" y="59" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="12" fill="currentColor">indexing runs, and the content is empty</text>
+        <path d="M 380 76 L 380 104 L 190 104 L 190 130" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+        <path d="M 520 76 L 520 104 L 700 104 L 700 130" fill="none" stroke="var(--accent)" stroke-width="1.8" marker-end="url(#arA)"/>
+        <rect x="40" y="136" width="300" height="52" fill="none" stroke="var(--fail)" stroke-width="1.5"/>
+        <text x="56" y="158" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">log line</text>
+        <text x="56" y="177" font-family="JetBrains Mono, monospace" font-size="12.5" fill="currentColor">indexed 5 chunks</text>
+        <rect x="550" y="136" width="310" height="52" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="566" y="158" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">log line</text>
+        <text x="566" y="177" font-family="JetBrains Mono, monospace" font-size="12.5" fill="currentColor">indexed 5 chunks, 0 characters</text>
+        <line x1="190" y1="188" x2="190" y2="222" stroke="var(--fail)" stroke-width="1.5" marker-end="url(#arF)"/>
+        <line x1="700" y1="188" x2="700" y2="222" stroke="var(--accent)" stroke-width="1.8" marker-end="url(#arA)"/>
+        <text x="190" y="244" text-anchor="middle" font-family="Archivo, sans-serif" font-size="14" font-weight="600" fill="var(--fail)">"the loop ran, so indexing works"</text>
+        <text x="190" y="266" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">searches elsewhere. the bug is in this function.</text>
+        <text x="700" y="244" text-anchor="middle" font-family="Archivo, sans-serif" font-size="14" font-weight="600" fill="currentColor">five of something empty</text>
+        <text x="700" y="266" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">goes straight to the truncation</text>
+        <line x1="40" y1="292" x2="860" y2="292" stroke="var(--rule)" stroke-width="1"/>
+        <text x="450" y="312" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--warn)">but measured in P04: on top of a gate that already prints both numbers, the logger added nothing — 58s vs 52s</text>
+      </svg>
+      <figcaption><b>Every log line that reports a count also reports a size.</b> And the honest caveat: this earns its keep when the gate is quiet. If the gate's own assertion already prints both numbers, a second channel saying the same thing is a step you will not be able to justify later.</figcaption>
+    </figure>
+    <div class="howto"><b>Smallest version</b>
+      <p>Send logs to a stream a pipe can capture, not a human-only console. Then run this test: read the logs of a broken tree and a working tree, and name which is broken <em>and which function</em> — without opening the source. If you cannot, the logs are decoration.</p>
+      <p>And write failures for the agent: not <code>Test failed</code>, but <code>Test failed: POST /api/reset returned 500. Check EMAIL_SERVICE_URL in .env. Template expected at templates/reset.html.</code></p>
+    </div>
+  </div>
+
+  <!-- E7 -->
+  <div class="element">
+    <div class="el-head"><span class="el-n">E7</span>
+      <h4>Boundaries — enforce, don't describe</h4>
+      <p>An architecture rule in a document is a rule nobody runs. The same rule as a sub-second script inside the gate names the file and the line.</p>
+    </div>
+    <figure>
+      <svg viewBox="0 0 820 380" role="img" aria-label="Four stacked layers with permitted calls flowing down between adjacent layers, and one banned red edge from the top layer directly to the filesystem, caught by a boundary script inside the gate.">
+        <g font-family="JetBrains Mono, monospace" font-size="12.5">
+          <rect x="60" y="44" width="420" height="50" fill="none" stroke="currentColor" stroke-width="1.4"/><text x="78" y="74" fill="currentColor">renderer / UI</text>
+          <rect x="60" y="122" width="420" height="50" fill="none" stroke="currentColor" stroke-width="1.4"/><text x="78" y="152" fill="currentColor">preload — the typed bridge</text>
+          <rect x="60" y="200" width="420" height="50" fill="none" stroke="currentColor" stroke-width="1.4"/><text x="78" y="230" fill="currentColor">main / IPC handlers</text>
+          <rect x="60" y="278" width="420" height="50" fill="none" stroke="currentColor" stroke-width="1.4"/><text x="78" y="308" fill="currentColor">services · filesystem · data</text>
+        </g>
+        <g stroke="currentColor" stroke-width="1.5" fill="none">
+          <line x1="150" y1="94" x2="150" y2="116" marker-end="url(#ar)"/>
+          <line x1="150" y1="172" x2="150" y2="194" marker-end="url(#ar)"/>
+          <line x1="150" y1="250" x2="150" y2="272" marker-end="url(#ar)"/>
+        </g>
+        <text x="164" y="110" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">allowed</text>
+        <path d="M 480 69 C 570 69 570 303 486 303" fill="none" stroke="var(--fail)" stroke-width="2.2" stroke-dasharray="6 4" marker-end="url(#arF)"/>
+        <circle cx="561" cy="186" r="13" fill="var(--ground)" stroke="var(--fail)" stroke-width="2"/>
+        <line x1="555" y1="180" x2="567" y2="192" stroke="var(--fail)" stroke-width="2.2"/>
+        <line x1="567" y1="180" x2="555" y2="192" stroke="var(--fail)" stroke-width="2.2"/>
+        <text x="586" y="182" font-family="JetBrains Mono, monospace" font-size="11.5" font-weight="700" fill="var(--fail)">the renderer must never</text>
+        <text x="586" y="198" font-family="JetBrains Mono, monospace" font-size="11.5" font-weight="700" fill="var(--fail)">touch the filesystem</text>
+        <rect x="60" y="344" width="700" height="0" fill="none"/>
+        <text x="60" y="356" font-family="JetBrains Mono, monospace" font-size="11.5" fill="var(--accent)">banned src/renderer "require\(.fs.\)|from ['\"]fs['\"]" "the renderer has no filesystem access"</text>
+      </svg>
+      <figcaption><b>One line per rule, inside the gate.</b> A rule that is only in a document is not enforced by anything, and an alias nobody uses does not prevent anything either.</figcaption>
+    </figure>
+    <div class="howto"><b>The trap when you test it</b>
+      <p>In P04 an unused banned import was added to prove the boundary script worked. The gate went red — and the boundary script had never executed, because the type checker caught the unused variable first. <strong>A red gate proves nothing until you have read which step produced the red</strong>, including when you are the one testing the check.</p>
+    </div>
+  </div>
+
+  <!-- E8 -->
+  <div class="element">
+    <div class="el-head"><span class="el-n">E8</span>
+      <h4>The reviewer — isolation is a file operation</h4>
+      <p>For the part no command can settle, the scorer must not be the author. And the way you make that true is by controlling what is in the directory, not by asking nicely.</p>
+    </div>
+    <figure>
+      <svg viewBox="0 0 880 320" role="img" aria-label="Two directories side by side. The author's working directory holds the code plus its own review notes and filled rubric. The reviewer's directory holds only the source files, the frozen brief and a blank rubric — the self-assessment is physically absent.">
+        <rect x="40" y="46" width="340" height="216" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="58" y="72" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" letter-spacing="1.2" fill="var(--muted)">WHAT THE AUTHOR HAD</text>
+        <g font-family="JetBrains Mono, monospace" font-size="12" fill="currentColor">
+          <text x="58" y="100">ConversationHistory.tsx</text>
+          <text x="58" y="122">App.tsx</text>
+          <text x="58" y="144">sprint-contract.md</text>
+          <text x="58" y="166" fill="var(--fail)">review-notes.md</text>
+          <text x="58" y="188" fill="var(--fail)">evaluator-rubric.md &#160;(filled in)</text>
+          <text x="58" y="210" fill="var(--fail)">the whole transcript</text>
+        </g>
+        <text x="58" y="240" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">self-score: 4.75</text>
+        <rect x="500" y="46" width="340" height="216" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="518" y="72" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" letter-spacing="1.2" fill="var(--accent)">WHAT THE REVIEWER GETS</text>
+        <g font-family="JetBrains Mono, monospace" font-size="12" fill="currentColor">
+          <text x="518" y="100">ConversationHistory.tsx</text>
+          <text x="518" y="122">App.diff</text>
+          <text x="518" y="144">types.ts</text>
+          <text x="518" y="166">feature-brief.md &#160;(frozen)</text>
+          <text x="518" y="188">evaluator-rubric.md &#160;(blank)</text>
+          <text x="518" y="210" fill="var(--muted)">— nothing else —</text>
+        </g>
+        <text x="518" y="240" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--accent)">independent score: 4.00</text>
+        <line x1="380" y1="154" x2="494" y2="154" stroke="currentColor" stroke-width="1.8" marker-end="url(#ar)"/>
+        <text x="437" y="140" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">copy source</text>
+        <text x="437" y="176" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">ONLY</text>
+        <text x="40" y="296" font-family="JetBrains Mono, monospace" font-size="11.5" fill="var(--ink-2)">identical code · the entire 0.75 gap sat in the four criteria no script could settle</text>
+      </svg>
+      <figcaption><b>An instruction not to look is not a control.</b> If the reviewer must not see something, do not tell it not to — do not put the file in the directory.</figcaption>
+    </figure>
+    <div class="howto"><b>Smallest version — three files, three calls</b>
+      <p><code>brief.md</code> (requirements as observable behaviour, plus "a filled rubric is part of done") · <code>rubric.md</code> (5–8 criteria, blank) · <code>revise.md</code> (apply every required revision; record disagreement, do not act on it). Then generate → review in a fresh context → revise.</p>
+      <p>Two lines make the rubric work: <strong>every score below the top must name a line, an input or an interaction</strong>, and <strong>top means a reviewer would merge it without comment</strong>. Without the first you collect vibes with numbers attached; without the second everything is one below top.</p>
+    </div>
+  </div>
+
+  <!-- E9 -->
+  <div class="element">
+    <div class="el-head"><span class="el-n">E9</span>
+      <h4>The removal test</h4>
+      <p>Every trigger you will ever write adds a step. Without one that removes, a harness grows until somebody comments it out — and then you have none.</p>
+    </div>
+    <pre class="mermaid">
+flowchart LR
+  A["keep BOTH trees from
+the break test:
+one broken, one working"] --> B["disable ONE step.
+do not delete it yet"]
+  B --> C["run the gate
+against both trees"]
+  C --> D{"same exit codes, and
+nothing an agent could have
+acted on went missing?"}
+  D -->|"yes"| E["decoration.
+argue for deleting it"]
+  D -->|"no"| F["put it back.
+now you know what it catches,
+which you did not before"]
+    </pre>
+    <div class="howto"><b>What the measurement actually said</b>
+      <p>P04 ran exactly this on the observability step: same broken app, one agent with a structured logger and one without. <strong>58s to the fix without it, 52s with. Three files read either way. Same root cause, same fix.</strong> A null result — and the step is still in the playbook.</p>
+      <p><strong>A null result is permission to argue for deletion, not an instruction to delete.</strong> Write down what the run could not settle: that one was n=1, and the bug was obvious enough that neither arm needed the logger.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Three clocks</h2>
+  <h3>Setup runs once. Two other things never stop.</h3>
+  <p class="lede">Most harness advice describes the first row and quietly assumes the other two. The second is where quality is kept; the third is the only thing that stops the file above from growing forever.</p>
+  <pre class="mermaid">
+flowchart TD
+  subgraph once["ONCE — day one, in order"]
+    direction LR
+    s0["0 · ASK"] --> s1["1 · MEASURE"] --> s2["2 · GATE"] --> s3["3 · DONE"]
+    s3 --> s4["3b · REVIEW"] --> s5["4 · EVIDENCE"] --> s6["5 · MEMORY"] --> s7["6 · MAP"] --> s8["7 · VERIFY"]
+  end
+  subgraph every["EVERY SESSION"]
+    direction LR
+    w["do the work"] --> c["8 · CLOSE
+five conditions, each a command"]
+    c --> w
+  end
+  subgraph months["OVER MONTHS"]
+    direction LR
+    m1["a bug escaped the gate"] --> m2["add a step, then revert
+the fix and watch it go red"]
+    m3["you cannot say
+what a step caught"] --> m4["run the removal test"]
+  end
+  once --> every
+  every --> months
+  </pre>
+  <p class="lede" style="margin-top:14px;font-size:15px">A bug that escapes is not just a bug — it is a measurement gap, and the gap will let the next one through too.</p>
+</section>
+
+<section>
+  <h2>How to use it</h2>
+  <h3>Day one, in order, on a project that has none of this</h3>
+  <ol class="steps">
+    <li><b>Interview the human — do not infer it from the code.</b><span>The question that matters: what is ONE real thing a user does that proves this works, and what does it give back that a script can compare? If they cannot answer, that is the most important finding of the day.</span></li>
+    <li><b>Measure the ground and write it down.</b><span>Run the build yourself. Record verbatim errors in BASELINE.md. Audit every claim already in the repo against a real command.</span></li>
+    <li><b>Write the gate, and watch it FAIL.</b><span>E2. One real user action end to end, and the assertion prints the numbers it compared.</span></li>
+    <li><b>Define done as a command in AGENTS.md.</b><span>E3. Plus the Trust rule and the Hands-off list.</span></li>
+    <li><b>Give every feature an empty evidence field.</b><span>E4. An empty field with a specific question is much harder to fill with nothing than a paragraph is.</span></li>
+    <li><b>Add the memory: a handoff form and a per-feature log.</b><span>E5. One field must demand a command's output.</span></li>
+    <li><b>Write the map — then enforce it.</b><span>E7. Break each rule on purpose and watch the script name the file.</span></li>
+    <li><b>Break something on purpose, and keep both trees.</b><span>Show three exit codes: broken → non-zero, working → 0, and <mark>compiles cleanly but dead at runtime → non-zero</mark>. The third is the whole point. The two trees become the fixtures for E9.</span></li>
+  </ol>
+  <div class="callout">
+    <p><strong>If you only have time for two: BASELINE.md and init.sh</strong> — with a product check in it.</p>
+    <p style="color:var(--muted);font-size:15px">Build the smallest gate that catches a real break. Add a step only when a real failure has slipped through it. Four steps that run every time beat twelve that get commented out.</p>
+  </div>
+</section>
+
+<section>
+  <h2>What was actually measured</h2>
+  <h3>One fixed scorer, four arms, key revealed afterwards</h3>
+  <p class="lede">Project 05 asked whether splitting an agent into roles produces better code. The published course reports the three-role variant highest by a wide margin. Scored blind, it came fourth of four.</p>
+  <div class="scroller">
+    <table>
+      <caption>Blind rubric mean, 8 criteria, scale 1–5</caption>
+      <thead><tr><th>Arm</th><th>Contexts</th><th>Who reviewed it</th><th class="num-cell">Score</th></tr></thead>
+      <tbody>
+        <tr><td>A · single</td><td>1</td><td>itself</td><td class="num-cell">4.0</td></tr>
+        <tr><td>A+ · single, holding the rubric</td><td>1</td><td>itself, with the rubric</td><td class="num-cell">4.4</td></tr>
+        <tr class="best"><td>B · generator + evaluator</td><td>2</td><td>a fresh context</td><td class="num-cell">4.5</td></tr>
+        <tr><td>C · planner + generator + evaluator</td><td>3</td><td>a fresh context, against a contract</td><td class="num-cell">4.1</td></tr>
+        <tr><td style="color:var(--muted)">untouched placeholder</td><td style="color:var(--muted)">—</td><td style="color:var(--muted)">floor, 3 replicates</td><td class="num-cell" style="color:var(--muted)">1.37</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="two" style="margin-top:32px">
+    <div><h4>The rubric bought 0.4</h4><p class="sub">4.0 → 4.4 · one line in a prompt</p>
+      <ul><li>Write the rubric <b>first</b>, and run it single-context. That is where the gain is.</li>
+      <li>Every score below the top must name a line, an input, or an interaction.</li></ul></div>
+    <div><h4>The second reviewer bought 0.1</h4><p class="sub">4.4 → 4.5 · a whole extra agent call, every round</p>
+      <ul><li>Add it when you need the <b>score</b> honest — not to make the code better. Different job.</li>
+      <li>On identical code: author 4.75, stranger 4.00. The whole gap sat in the four criteria no script could settle.</li></ul></div>
+  </div>
+  <div class="callout" style="margin-top:28px">
+    <p>Self-review was <strong>accurate on everything checkable and generous on everything else.</strong> One agent found a real defect in its own work, fixed it — and scored itself 4.6 both before and after. The generosity is in the number, not the prose.</p>
+  </div>
+</section>
+
+<section>
+  <h2>The next floor · loops</h2>
+  <h3>The same agent, restarted on a trigger, with no human between runs</h3>
+
+  <div class="callout unearned"><span class="flag">Unearned</span>
+    <p style="font-size:15.5px;color:var(--ink-2)">No run here was a loop, and none had two agents working at once. Everything in this section and the next is structure, not measurement — except the four facts explicitly marked <b>measured</b>.</p>
+  </div>
+
+  <div class="element" style="margin-top:28px">
+    <div class="el-head"><span class="el-n">L1</span>
+      <h4>What actually changes</h4>
+      <p>Not the agent, and not the gate. What moves is you — from inside the cycle, where every step waits on your prompt, to outside it, reading a file.</p>
+    </div>
+    <figure>
+      <svg viewBox="0 0 900 310" role="img" aria-label="Left: in a harness the human sits inside the cycle, prompting the agent and reading the gate's result before prompting again. Right: in a loop a trigger replaces the human inside the cycle, the state file closes it, and the human sits outside reading state rather than running steps.">
+        <text x="40" y="30" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" letter-spacing="1.3" fill="var(--muted)">A HARNESS — YOU ARE INSIDE</text>
+        <rect x="60" y="66" width="112" height="46" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="116" y="94" text-anchor="middle" font-family="Archivo, sans-serif" font-size="13" font-weight="700" fill="currentColor">HUMAN</text>
+        <rect x="232" y="66" width="112" height="46" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="288" y="94" text-anchor="middle" font-family="Archivo, sans-serif" font-size="13" font-weight="600" fill="currentColor">AGENT</text>
+        <rect x="232" y="170" width="112" height="46" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="288" y="198" text-anchor="middle" font-family="Archivo, sans-serif" font-size="13" font-weight="600" fill="currentColor">GATE</text>
+        <line x1="172" y1="89" x2="226" y2="89" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+        <text x="199" y="80" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--muted)">prompts</text>
+        <line x1="288" y1="112" x2="288" y2="164" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+        <path d="M 232 193 L 116 193 L 116 118" fill="none" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+        <text x="174" y="211" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--muted)">reads, decides, prompts again</text>
+        <text x="40" y="268" font-family="JetBrains Mono, monospace" font-size="11.5" fill="var(--fail)">every turn of the cycle waits on you</text>
+        <line x1="430" y1="20" x2="430" y2="290" stroke="var(--rule)" stroke-width="1"/>
+        <text x="490" y="30" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" letter-spacing="1.3" fill="var(--muted)">A LOOP — YOU ARE OUTSIDE</text>
+        <rect x="510" y="66" width="112" height="46" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4"/>
+        <text x="566" y="88" text-anchor="middle" font-family="Archivo, sans-serif" font-size="12" font-weight="600" fill="currentColor">TRIGGER</text>
+        <text x="566" y="103" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9.5" fill="var(--muted)">timer / event</text>
+        <rect x="682" y="66" width="112" height="46" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="738" y="94" text-anchor="middle" font-family="Archivo, sans-serif" font-size="13" font-weight="600" fill="currentColor">AGENT</text>
+        <rect x="682" y="170" width="112" height="46" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="738" y="198" text-anchor="middle" font-family="Archivo, sans-serif" font-size="13" font-weight="600" fill="currentColor">GATE</text>
+        <rect x="510" y="170" width="112" height="46" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="566" y="192" text-anchor="middle" font-family="Archivo, sans-serif" font-size="12" font-weight="700" fill="currentColor">STATE</text>
+        <text x="566" y="207" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="9.5" fill="var(--ink-2)">on disk</text>
+        <line x1="622" y1="89" x2="676" y2="89" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="738" y1="112" x2="738" y2="164" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="682" y1="193" x2="628" y2="193" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="566" y1="170" x2="566" y2="118" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+        <rect x="640" y="248" width="220" height="42" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="750" y="274" text-anchor="middle" font-family="Archivo, sans-serif" font-size="12.5" font-weight="700" fill="currentColor">HUMAN — reads the state</text>
+        <path d="M 566 216 L 566 269 L 634 269" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arA)"/>
+      </svg>
+      <figcaption><b>The trigger and the state file are the only new parts.</b> Everything else was already there — which is why a loop is mostly harness work, and why a missing harness file becomes a loop that stalls at 3am with nobody reading the output.</figcaption>
+    </figure>
+    <div class="howto"><b>The readiness test</b>
+      <p>Not "do I have a scheduler". This: <strong>if you had to write the loop's brief tonight, would every line be a copy-paste out of files that already exist?</strong> An empty row below is where the loop will fail unattended.</p>
+    </div>
+  </div>
+
+  <div class="element">
+    <div class="el-head"><span class="el-n">L2</span>
+      <h4><code>goal.md</code> — the brief, and it is a readout</h4>
+      <p>Seven sections. Six of them already exist somewhere in the harness; assembling the file is ten minutes. If they do not exist, no amount of loop tooling helps.</p>
+    </div>
+    <figure>
+      <svg viewBox="0 0 900 400" role="img" aria-label="The seven sections of goal.md, each with an arrow from the existing harness file it is copied out of. Only the stop conditions section has no existing source and must be written fresh.">
+        <text x="520" y="34" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" letter-spacing="1.3" fill="var(--muted)">goal.md</text>
+        <text x="455" y="34" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" letter-spacing="1.3" fill="var(--muted)">ALREADY ON DISK</text>
+        <g font-family="JetBrains Mono, monospace" font-size="12">
+          <rect x="516" y="48" width="344" height="42" fill="none" stroke="currentColor" stroke-width="1.2"/><text x="532" y="74" fill="currentColor">## Goal</text>
+          <rect x="516" y="96" width="344" height="42" fill="none" stroke="currentColor" stroke-width="1.2"/><text x="532" y="122" fill="currentColor">## Acceptance Criteria</text>
+          <rect x="516" y="144" width="344" height="42" fill="none" stroke="currentColor" stroke-width="1.2"/><text x="532" y="170" fill="currentColor">## Scope — Fair game / Hands off</text>
+          <rect x="516" y="192" width="344" height="42" fill="none" stroke="currentColor" stroke-width="1.2"/><text x="532" y="218" fill="currentColor">## Verification Method</text>
+          <rect x="516" y="240" width="344" height="42" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5"/><text x="532" y="266" fill="currentColor" font-weight="700">## Stop Conditions</text>
+          <rect x="516" y="288" width="344" height="42" fill="none" stroke="currentColor" stroke-width="1.2"/><text x="532" y="314" fill="currentColor">## How to Work</text>
+          <rect x="516" y="336" width="344" height="42" fill="none" stroke="currentColor" stroke-width="1.2"/><text x="532" y="362" fill="currentColor">## Output</text>
+        </g>
+        <g font-family="JetBrains Mono, monospace" font-size="11.5" fill="var(--ink-2)" text-anchor="end">
+          <text x="452" y="73">the human — one sentence</text>
+          <text x="452" y="121">your gate&apos;s assertions, as checkboxes</text>
+          <text x="452" y="169">AGENTS.md · the Hands-off list</text>
+          <text x="452" y="217">Definition of Done, in order</text>
+          <text x="452" y="265" fill="var(--accent)" font-weight="700">nothing. you write these.</text>
+          <text x="452" y="313">AGENTS.md · startup workflow</text>
+          <text x="452" y="361">session-handoff.md</text>
+        </g>
+        <g stroke="currentColor" stroke-width="1.3" fill="none">
+          <line x1="462" y1="69" x2="510" y2="69" marker-end="url(#ar)"/>
+          <line x1="462" y1="117" x2="510" y2="117" marker-end="url(#ar)"/>
+          <line x1="462" y1="165" x2="510" y2="165" marker-end="url(#ar)"/>
+          <line x1="462" y1="213" x2="510" y2="213" marker-end="url(#ar)"/>
+          <line x1="462" y1="309" x2="510" y2="309" marker-end="url(#ar)"/>
+          <line x1="462" y1="357" x2="510" y2="357" marker-end="url(#ar)"/>
+        </g>
+        <line x1="462" y1="261" x2="510" y2="261" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#arA)"/>
+      </svg>
+      <figcaption><b>Six arrows come from files you already wrote. One does not.</b> That is the honest shape of loop engineering: it is not new tooling, it is the harness finished — plus a decision about when to stop.</figcaption>
+    </figure>
+    <div class="howto"><b>Four stop conditions, not one</b>
+      <pre class="snip"><span class="c">## Stop Conditions</span>
+- all acceptance criteria pass          <span class="c">&lt;- the happy path</span>
+- max turns reached: 20
+- no progress for 3 consecutive rounds  <span class="c">&lt;- same error keeps appearing</span>
+- blocked, and cannot resolve alone     <span class="c">&lt;- missing dep, env problem</span></pre>
+      <p style="margin-top:12px"><strong>Measured:</strong> a stop condition is an exit code, never a duration. Stopping a run at the right moment took three attempts here <em>with</em> a human watching — a clock gave both "finished everything in 6m54s" and "zero files written" on consecutive tries. Counting file edits worked. A loop has nobody watching at all.</p>
+    </div>
+  </div>
+
+  <div class="element">
+    <div class="el-head"><span class="el-n">L3</span>
+      <h4>The round — maker, checker, state</h4>
+      <p>E8 running every round instead of once. The two agents never talk directly; the state file is the handoff, which is what makes a round resumable after a crash.</p>
+    </div>
+    <figure>
+      <svg viewBox="0 0 900 300" role="img" aria-label="A maker hands a fixed report to a checker, both write to loop-state.md, and round N plus one begins by reading that file. N consecutive passes ends the loop.">
+        <text x="407" y="26" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">hands over a fixed block: what changed · files touched · build/lint/test</text>
+        <text x="407" y="42" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" fill="var(--accent)">· and the parts it is unsure about ·</text>
+        <rect x="70" y="56" width="230" height="84" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <text x="185" y="88" text-anchor="middle" font-family="Archivo, sans-serif" font-size="15" font-weight="700" fill="currentColor">MAKER</text>
+        <text x="185" y="110" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">implements, self-verifies</text>
+        <text x="185" y="126" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">that it at least runs</text>
+        <rect x="520" y="56" width="230" height="84" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="5 4"/>
+        <text x="635" y="88" text-anchor="middle" font-family="Archivo, sans-serif" font-size="15" font-weight="700" fill="currentColor">CHECKER</text>
+        <text x="635" y="110" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">&quot;not finding problems</text>
+        <text x="635" y="126" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">is your failure&quot;</text>
+        <line x1="300" y1="98" x2="514" y2="98" stroke="currentColor" stroke-width="1.6" marker-end="url(#ar)"/>
+        <rect x="70" y="176" width="680" height="54" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+        <text x="88" y="199" font-family="JetBrains Mono, monospace" font-size="12" font-weight="700" fill="currentColor">loop-state.md</text>
+        <text x="88" y="217" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--ink-2)">round N · what the maker did · what the checker found · pass/fail · did a human step in, and why</text>
+        <line x1="185" y1="140" x2="185" y2="170" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+        <line x1="635" y1="140" x2="635" y2="170" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+        <path d="M 70 203 L 32 203 L 32 98 L 64 98" fill="none" stroke="var(--accent)" stroke-width="1.6" marker-end="url(#arA)"/>
+        <text x="140" y="256" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--accent)">round N+1 opens by reading it</text>
+        <line x1="750" y1="98" x2="796" y2="98" stroke="var(--pass)" stroke-width="2" marker-end="url(#arP)"/>
+        <text x="804" y="94" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" fill="var(--pass)">N passes</text>
+        <text x="804" y="109" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" fill="var(--pass)">in a row</text>
+        <text x="530" y="256" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">every issue: description · file:line · evidence · severity</text>
+      </svg>
+      <figcaption><b>The maker hands over its own suspicion list.</b> That one field is what stops the checker spreading its attention evenly over code that is mostly fine — and it costs the maker nothing, because it already knows.</figcaption>
+    </figure>
+  </div>
+
+  <div class="element">
+    <div class="el-head"><span class="el-n">L4</span>
+      <h4>The six primitives</h4>
+      <p>Five things on the ring, and one underneath it. Drawing external state as a sixth peer is the mistake — it is the floor the other five stand on.</p>
+    </div>
+    <figure>
+      <svg viewBox="0 0 880 290" role="img" aria-label="Five loop primitives in a row — automations, worktrees, skills, connectors and sub-agents — all resting on a wide external-state bar beneath them, labelled as the spine rather than a sixth peer.">
+        <g font-family="JetBrains Mono, monospace">
+          <rect x="30" y="52" width="152" height="72" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="106" y="80" text-anchor="middle" font-size="12.5" font-weight="700" fill="currentColor">Automations</text>
+          <text x="106" y="99" text-anchor="middle" font-size="10" fill="var(--muted)">the heartbeat</text>
+          <text x="106" y="113" text-anchor="middle" font-size="10" fill="var(--muted)">timer / webhook</text>
+          <rect x="198" y="52" width="152" height="72" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4"/>
+          <text x="274" y="80" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--muted)">Worktrees</text>
+          <text x="274" y="99" text-anchor="middle" font-size="10" fill="var(--muted)">parallel isolation</text>
+          <text x="274" y="113" text-anchor="middle" font-size="10" fill="var(--warn)">not until level 3</text>
+          <rect x="366" y="52" width="152" height="72" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="442" y="80" text-anchor="middle" font-size="12.5" font-weight="700" fill="currentColor">Skills</text>
+          <text x="442" y="99" text-anchor="middle" font-size="10" fill="var(--muted)">codified project</text>
+          <text x="442" y="113" text-anchor="middle" font-size="10" fill="var(--muted)">knowledge</text>
+          <rect x="534" y="52" width="152" height="72" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4"/>
+          <text x="610" y="80" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--muted)">Connectors</text>
+          <text x="610" y="99" text-anchor="middle" font-size="10" fill="var(--muted)">real tools, and</text>
+          <text x="610" y="113" text-anchor="middle" font-size="10" fill="var(--warn)">a wider blast radius</text>
+          <rect x="702" y="52" width="148" height="72" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+          <text x="776" y="80" text-anchor="middle" font-size="12.5" font-weight="700" fill="currentColor">Sub-agents</text>
+          <text x="776" y="99" text-anchor="middle" font-size="10" fill="var(--muted)">maker away</text>
+          <text x="776" y="113" text-anchor="middle" font-size="10" fill="var(--muted)">from checker</text>
+        </g>
+        <g stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 4" opacity=".6">
+          <line x1="106" y1="124" x2="106" y2="176"/><line x1="274" y1="124" x2="274" y2="176"/>
+          <line x1="442" y1="124" x2="442" y2="176"/><line x1="610" y1="124" x2="610" y2="176"/>
+          <line x1="776" y1="124" x2="776" y2="176"/>
+        </g>
+        <rect x="30" y="178" width="820" height="66" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5"/>
+        <text x="440" y="206" text-anchor="middle" font-family="Archivo, sans-serif" font-size="15" font-weight="700" fill="currentColor">EXTERNAL STATE — memory that outlives a run</text>
+        <text x="440" y="228" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--ink-2)">not a sixth item on the ring · the floor the other five stand on · you built this at E5</text>
+        <text x="30" y="34" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">solid = you likely need it early &#160;·&#160; dashed = defer until there is something to isolate or reach</text>
+        <text x="30" y="272" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--fail)">measured: serialise first, isolate second — two runs on one mount, and one deleted the other&apos;s history 60s in</text>
+      </svg>
+      <figcaption><b>Two of the five are traps if you reach for them early.</b> Worktrees buy nothing until you can supervise parallel output, and connectors widen what a loop can damage before any loop needs the reach.</figcaption>
+    </figure>
+  </div>
+
+  <div class="element">
+    <div class="el-head"><span class="el-n">L5</span>
+      <h4>The ladder, and what it costs you</h4>
+      <p>Five rungs, and the returns are front-loaded. Level 1 is one file and a stop condition; level 5 is a fleet you cannot personally read the output of.</p>
+    </div>
+    <figure>
+      <svg viewBox="0 0 880 300" role="img" aria-label="A five-step staircase: goal runner, scheduled single task, maker-checker split, self-feeding loop, and fleet orchestration. A bracket marks levels two and three as where most teams sit, and level one is marked as paying back fastest.">
+        <g font-family="JetBrains Mono, monospace" font-size="11.5">
+          <rect x="30" y="206" width="150" height="54" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5"/>
+          <text x="46" y="228" font-weight="700" fill="currentColor">1 · Goal runner</text>
+          <text x="46" y="246" font-size="10" fill="var(--ink-2)">a goal + a stop condition</text>
+          <rect x="196" y="174" width="150" height="86" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="212" y="196" font-weight="700" fill="currentColor">2 · Scheduled</text>
+          <text x="212" y="214" font-size="10" fill="var(--muted)">one task, one timer</text>
+          <rect x="362" y="142" width="150" height="118" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="378" y="164" font-weight="700" fill="currentColor">3 · Maker/</text>
+          <text x="378" y="180" font-weight="700" fill="currentColor">&#160;&#160;&#160;&#160;checker</text>
+          <text x="378" y="198" font-size="10" fill="var(--muted)">two roles, isolated</text>
+          <rect x="528" y="110" width="150" height="150" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4"/>
+          <text x="544" y="132" font-weight="700" fill="var(--muted)">4 · Self-feeding</text>
+          <text x="544" y="150" font-size="10" fill="var(--muted)">picks its own</text>
+          <text x="544" y="164" font-size="10" fill="var(--muted)">next task</text>
+          <rect x="694" y="78" width="150" height="182" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4"/>
+          <text x="710" y="100" font-weight="700" fill="var(--muted)">5 · Fleet</text>
+          <text x="710" y="118" font-size="10" fill="var(--muted)">many loops, one</text>
+          <text x="710" y="132" font-size="10" fill="var(--muted)">memory layer</text>
+        </g>
+        <path d="M 196 274 L 196 282 L 512 282 L 512 274" fill="none" stroke="var(--muted)" stroke-width="1.3"/>
+        <text x="354" y="298" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">most teams are somewhere in here</text>
+        <text x="105" y="284" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" font-weight="700" fill="var(--accent)">pays back fastest</text>
+        <text x="694" y="54" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--warn)">your review bandwidth</text>
+        <text x="694" y="68" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--warn)">is the ceiling, not the tooling</text>
+      </svg>
+      <figcaption><b>Do not install a scheduler before you have something worth running twice.</b> The rungs above 3 are dashed because nothing here has run them, and because each one widens the gap between what gets produced and what you can actually read.</figcaption>
+    </figure>
+    <div class="howto"><b>Four costs that arrive quietly</b>
+      <p><strong>Verification debt</strong> — "looks fine" quietly replaces "confirmed". Fix: stop conditions machine-checkable, always. &#160;<strong>Comprehension rot</strong> — the loop ships faster than you read. Fix: fast loops need fast reading. &#160;<strong>Cognitive surrender</strong> — you stop having opinions about the output; the loop cannot tell the difference, you can. &#160;<strong>Token blowout</strong> — context grows roughly quadratically per turn.</p>
+      <p>Only the last one is a day-one problem, and it lands back on the harness: keep <code>AGENTS.md</code> a short entrypoint that links out, keep state files summary-first, put each fact in one place. A harness already near the context limit on a single manual run has no headroom to iterate.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>The floor above that · graphs</h2>
+  <h3>More than one agent, plus a written answer to where a failure goes back to</h3>
+
+  <div class="element">
+    <div class="el-head"><span class="el-n">G1</span>
+      <h4>A graph is the loop, opened out</h4>
+      <p>Not a new invention. The rollback edges were always there — the agent just "remembered" them, inside a context nobody else could read.</p>
+    </div>
+    <figure>
+      <svg viewBox="0 0 900 380" role="img" aria-label="Left: a loop drawn as a ring of four stages with the routing decisions hidden inside one agent. Right: the same work as explicit nodes with labelled edges, including a rollback edge from verify back to implement and another from implement back to research.">
+        <text x="40" y="30" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" letter-spacing="1.3" fill="var(--muted)">A LOOP — ONE CONTEXT</text>
+        <circle cx="200" cy="182" r="92" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 5" opacity=".55"/>
+        <g font-family="JetBrains Mono, monospace" font-size="11">
+          <rect x="152" y="72" width="96" height="34" fill="var(--surface)" stroke="currentColor" stroke-width="1.3"/><text x="200" y="94" text-anchor="middle" fill="currentColor">discover</text>
+          <rect x="266" y="164" width="96" height="34" fill="var(--surface)" stroke="currentColor" stroke-width="1.3"/><text x="314" y="186" text-anchor="middle" fill="currentColor">implement</text>
+          <rect x="152" y="256" width="96" height="34" fill="var(--surface)" stroke="currentColor" stroke-width="1.3"/><text x="200" y="278" text-anchor="middle" fill="currentColor">verify</text>
+          <rect x="38" y="164" width="96" height="34" fill="var(--surface)" stroke="currentColor" stroke-width="1.3"/><text x="86" y="186" text-anchor="middle" fill="currentColor">persist</text>
+        </g>
+        <text x="200" y="178" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--fail)">where does a</text>
+        <text x="200" y="193" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--fail)">failure go?</text>
+        <text x="200" y="208" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--fail)">nobody wrote it down</text>
+        <text x="40" y="340" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">cheap. the failure modes are invisible,</text>
+        <text x="40" y="356" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--muted)">because the agent does not know where it is stuck.</text>
+        <line x1="430" y1="20" x2="430" y2="368" stroke="var(--rule)" stroke-width="1"/>
+        <text x="490" y="30" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" letter-spacing="1.3" fill="var(--muted)">A GRAPH — THE SAME RING, WRITTEN DOWN</text>
+        <g font-family="JetBrains Mono, monospace" font-size="11.5">
+          <rect x="530" y="60" width="150" height="46" fill="none" stroke="currentColor" stroke-width="1.4"/><text x="605" y="88" text-anchor="middle" fill="currentColor">research</text>
+          <rect x="530" y="152" width="150" height="46" fill="none" stroke="currentColor" stroke-width="1.4"/><text x="605" y="180" text-anchor="middle" fill="currentColor">implement</text>
+          <rect x="530" y="244" width="150" height="46" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/><text x="605" y="272" text-anchor="middle" fill="currentColor">verify</text>
+          <rect x="756" y="244" width="110" height="46" fill="none" stroke="var(--pass)" stroke-width="1.5"/><text x="811" y="272" text-anchor="middle" fill="var(--pass)">merge</text>
+        </g>
+        <line x1="605" y1="106" x2="605" y2="146" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="605" y1="198" x2="605" y2="238" stroke="currentColor" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="680" y1="267" x2="750" y2="267" stroke="var(--pass)" stroke-width="1.8" marker-end="url(#arP)"/>
+        <text x="715" y="258" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--pass)">passed</text>
+        <path d="M 680 256 L 712 256 L 712 175 L 686 175" fill="none" stroke="var(--fail)" stroke-width="1.8" marker-end="url(#arF)"/>
+        <text x="722" y="212" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--fail)">failed</text>
+        <path d="M 530 175 L 498 175 L 498 83 L 524 83" fill="none" stroke="var(--fail)" stroke-width="1.8" marker-end="url(#arF)"/>
+        <text x="492" y="130" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--fail)">not enough</text>
+        <text x="492" y="144" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--fail)">information</text>
+        <text x="470" y="340" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--accent)">more work up front. it buys readability,</text>
+        <text x="470" y="356" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--accent)">auditability, and repair of one node instead of the whole run.</text>
+      </svg>
+      <figcaption><b>The two red edges are the entire difference.</b> A loop is a deferred decision — deal with it when you get stuck. A graph is an up-front one: declare where each kind of failure returns to, before it happens.</figcaption>
+    </figure>
+  </div>
+
+  <div class="element">
+    <div class="el-head"><span class="el-n">G2</span>
+      <h4>Why it works: shared state, private context</h4>
+      <p>The mechanism people miss. A graph does not just split the work — it splits the <em>context</em>, and shares only a file. That is also why E8's isolation rule scales up unchanged.</p>
+    </div>
+    <figure>
+      <svg viewBox="0 0 880 320" role="img" aria-label="Left: one agent whose single context accumulates requirements, research, code, test output, review notes and its own retries. Right: three nodes each with a private context, all reading and writing one shared state file.">
+        <text x="30" y="30" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" letter-spacing="1.3" fill="var(--muted)">ONE AGENT</text>
+        <rect x="30" y="48" width="336" height="196" fill="none" stroke="var(--fail)" stroke-width="1.8"/>
+        <text x="198" y="74" text-anchor="middle" font-family="Archivo, sans-serif" font-size="13" font-weight="700" fill="currentColor">one context window</text>
+        <g font-family="JetBrains Mono, monospace" font-size="11" fill="var(--ink-2)">
+          <text x="52" y="104">requirements</text><text x="52" y="124">research notes</text>
+          <text x="52" y="144">every file it read</text><text x="52" y="164">code it wrote, and rewrote</text>
+          <text x="52" y="184">test output, all of it</text><text x="52" y="204">its own review of its own work</text>
+          <text x="52" y="224" fill="var(--fail)">and every retry it has already failed</text>
+        </g>
+        <text x="30" y="272" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--fail)">it drowns in its own transcript, and it grades</text>
+        <text x="30" y="288" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--fail)">work it can still remember writing</text>
+        <line x1="418" y1="20" x2="418" y2="300" stroke="var(--rule)" stroke-width="1"/>
+        <text x="470" y="30" font-family="JetBrains Mono, monospace" font-size="11" font-weight="700" letter-spacing="1.3" fill="var(--muted)">A GRAPH</text>
+        <g font-family="JetBrains Mono, monospace" font-size="11">
+          <rect x="470" y="48" width="120" height="70" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="530" y="74" text-anchor="middle" font-weight="700" fill="currentColor">research</text>
+          <text x="530" y="94" text-anchor="middle" font-size="9.5" fill="var(--muted)">private</text><text x="530" y="107" text-anchor="middle" font-size="9.5" fill="var(--muted)">context</text>
+          <rect x="606" y="48" width="120" height="70" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="666" y="74" text-anchor="middle" font-weight="700" fill="currentColor">implement</text>
+          <text x="666" y="94" text-anchor="middle" font-size="9.5" fill="var(--muted)">private</text><text x="666" y="107" text-anchor="middle" font-size="9.5" fill="var(--muted)">context</text>
+          <rect x="742" y="48" width="120" height="70" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+          <text x="802" y="74" text-anchor="middle" font-weight="700" fill="currentColor">verify</text>
+          <text x="802" y="94" text-anchor="middle" font-size="9.5" fill="var(--accent)">has never seen</text><text x="802" y="107" text-anchor="middle" font-size="9.5" fill="var(--accent)">the other two</text>
+        </g>
+        <g stroke="currentColor" stroke-width="1.3">
+          <line x1="518" y1="118" x2="518" y2="176" marker-end="url(#ar)"/><line x1="542" y1="176" x2="542" y2="118" marker-end="url(#ar)"/>
+          <line x1="654" y1="118" x2="654" y2="176" marker-end="url(#ar)"/><line x1="678" y1="176" x2="678" y2="118" marker-end="url(#ar)"/>
+          <line x1="790" y1="118" x2="790" y2="176" marker-end="url(#ar)"/><line x1="814" y1="176" x2="814" y2="118" marker-end="url(#ar)"/>
+        </g>
+        <rect x="470" y="178" width="392" height="66" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.5"/>
+        <text x="666" y="204" text-anchor="middle" font-family="Archivo, sans-serif" font-size="13.5" font-weight="700" fill="currentColor">SHARED STATE — one file</text>
+        <text x="666" y="226" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--ink-2)">requirements · notes · code · results · which layer the problem came from</text>
+        <text x="470" y="272" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--accent)">nodes do not shout at each other. they read and write</text>
+        <text x="470" y="288" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--accent)">the same state — and nothing else crosses.</text>
+      </svg>
+      <figcaption><b>"Which layer the problem came from" is a state field, not a vibe.</b> Without it a failure can only bounce to the top of the graph; with it, verify can send a misread requirement back to research instead of making implement guess again.</figcaption>
+    </figure>
+    <div class="howto"><b><code>graph.md</code> — one file, four things</b>
+      <pre class="snip"><span class="c">## Diagram</span>        a mermaid flowchart
+<span class="c">## Nodes</span>          name | responsibility | in | out | agent or code?
+<span class="c">## Edges</span>          from | to | condition | is it a rollback?
+<span class="c">## Shared state</span>   field | who writes it | who reads it
+<span class="c">## Routing</span>        current node | condition | next node</pre>
+      <p style="margin-top:12px">Draw it once for a workflow you already run, and look for <strong>one edge you did not know existed</strong> — a path that lived in an agent's head and was never written anywhere. That edge is the whole return on the exercise.</p>
+    </div>
+  </div>
+
+  <div class="element">
+    <div class="el-head"><span class="el-n">G3</span>
+      <h4>Do you actually need one</h4>
+      <p>Five criteria, and you need three before drawing. The list matters less than the tiebreaker attached to it.</p>
+    </div>
+    <div class="howto" style="background:var(--surface);border-top:none;padding-top:4px">
+      <pre class="snip">[ ] 1 · the task splits into genuinely independent units
+[<span class="k">x</span>] 2 · <span class="k">there are branch or rollback paths</span>          &lt;- the one that decides it
+[ ] 3 · intermediate state is worth checkpointing
+[ ] 4 · every node has an automatically checkable definition of done
+[ ] 5 · coordination benefit beats coordination cost
+
+scored below three? what you needed was a better script.</pre>
+      <p style="margin-top:14px"><strong>Scale is not the criterion — branches are.</strong> A twenty-step linear pipeline is a script, however long it is. Five nodes with a real rollback and an approval is a graph.</p>
+      <p>By that test, everything measured in Projects 01–05 was a linear three-call pipeline: generate, review, revise. No branch, no rollback, no approval node. <strong>None of it needed a graph</strong> — which is the honest reason this section is short.</p>
+    </div>
+  </div>
+
+  <div class="element">
+    <div class="el-head"><span class="el-n">G4</span>
+      <h4>The two things everyone skips</h4>
+      <p>Both are about the boundary between the graph and reality, and both get dropped first because neither one makes the diagram look better.</p>
+    </div>
+    <div class="two" style="border:none">
+      <div style="border-right:1px solid var(--rule)">
+        <h4>Anchors</h4>
+        <p class="sub">the only thing that can say "the number moved, the world did not"</p>
+        <ul>
+          <li>Real outcomes, ground-truth data, human spot-checks — something <b>outside</b> every loop in the graph.</li>
+          <li>Without one, a network of loops is a resonance of mutual drift: every node hits its target and the thing they were built for gets worse.</li>
+          <li>Your version already exists in miniature: the product check in <code>init.sh</code> is an anchor. It is the one step that touches the real thing instead of a proxy for it.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>The orchestration tax</h4>
+        <p class="sub">starting an agent is a keystroke; closing the loop on one is not</p>
+        <ul>
+          <li>Launching is cheap. Someone has to read what came back and reconcile it with what the others touched — and <b>there is one of you</b>.</li>
+          <li>A graph runs more agents in parallel. Your judgement does not parallelise, so adding nodes optimises the part that was never the bottleneck.</li>
+          <li>This is why the ladder in L5 tops out where it does, and why <b>serialise first, isolate second</b> is the only measurement here that touches the question.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:8px">
+    <p><strong>A loop hides the problem inside the loop. A graph puts the problem on paper.</strong></p>
+    <p style="color:var(--muted);font-size:15px">Which is the point of both sections: neither floor is new tooling. They are this playbook, finished — and then wired together.</p>
+  </div>
+</section>
+
+<footer>
+  Distilled from my-runs/HARNESS-PLAYBOOK.md · every number is n=1 or n=2, the reason a rule exists rather than a statistic<br>
+  Projects 01–05 were run and measured here. Projects 06–08 were not, and are marked wherever they appear.
+</footer>
+
+</div>
